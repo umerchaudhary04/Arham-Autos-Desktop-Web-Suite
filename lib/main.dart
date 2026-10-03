@@ -5,6 +5,10 @@ import 'features/inventory/parts_master_screen.dart';
 import 'features/purchases/grn_screen.dart';
 import 'features/barcode_studio/barcode_studio_screen.dart';
 import 'features/pos/pos_screen.dart';
+import 'features/returns/returns_screen.dart';
+import 'features/expenses/expenses_screen.dart';
+import 'features/employees/employees_screen.dart';
+import 'features/reports/reports_screen.dart';
 import 'package:drift/native.dart';
 
 void main() {
@@ -66,6 +70,31 @@ class DashboardScreen extends StatelessWidget {
               onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PosScreen())),
               child: const Text('4. POS Terminal (Phase 3)'),
             ),
+            const SizedBox(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                ElevatedButton(
+                  onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ReturnsScreen())),
+                  child: const Text('Returns (Phase 4)'),
+                ),
+                const SizedBox(width: 10),
+                ElevatedButton(
+                  onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ExpensesScreen())),
+                  child: const Text('Expenses (Phase 4)'),
+                ),
+                const SizedBox(width: 10),
+                ElevatedButton(
+                  onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const EmployeesScreen())),
+                  child: const Text('Employees (Phase 4)'),
+                ),
+                const SizedBox(width: 10),
+                ElevatedButton(
+                  onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ReportsScreen())),
+                  child: const Text('Reports (Phase 4)'),
+                ),
+              ],
+            )
           ],
         ),
       ),

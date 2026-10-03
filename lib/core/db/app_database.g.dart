@@ -4514,10 +4514,19 @@ class $ExpensesTable extends Expenses with TableInfo<$ExpensesTable, Expense> {
   late final GeneratedColumn<int> amountPaisa = GeneratedColumn<int>(
       'amount_paisa', aliasedName, false,
       type: DriftSqlType.int, requiredDuringInsert: true);
-  static const VerificationMeta _notesMeta = const VerificationMeta('notes');
+  static const VerificationMeta _paymentModeMeta =
+      const VerificationMeta('paymentMode');
   @override
-  late final GeneratedColumn<String> notes = GeneratedColumn<String>(
-      'notes', aliasedName, true,
+  late final GeneratedColumn<String> paymentMode = GeneratedColumn<String>(
+      'payment_mode', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('CASH'));
+  static const VerificationMeta _descriptionMeta =
+      const VerificationMeta('description');
+  @override
+  late final GeneratedColumn<String> description = GeneratedColumn<String>(
+      'description', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
   static const VerificationMeta _recordedByMeta =
       const VerificationMeta('recordedBy');
@@ -4528,6 +4537,12 @@ class $ExpensesTable extends Expenses with TableInfo<$ExpensesTable, Expense> {
       requiredDuringInsert: true,
       defaultConstraints:
           GeneratedColumn.constraintIsAlways('REFERENCES users (id)'));
+  static const VerificationMeta _expenseDateMeta =
+      const VerificationMeta('expenseDate');
+  @override
+  late final GeneratedColumn<DateTime> expenseDate = GeneratedColumn<DateTime>(
+      'expense_date', aliasedName, false,
+      type: DriftSqlType.dateTime, requiredDuringInsert: true);
   static const VerificationMeta _createdAtMeta =
       const VerificationMeta('createdAt');
   @override
@@ -4537,8 +4552,16 @@ class $ExpensesTable extends Expenses with TableInfo<$ExpensesTable, Expense> {
       requiredDuringInsert: false,
       clientDefault: () => DateTime.now());
   @override
-  List<GeneratedColumn> get $columns =>
-      [id, category, amountPaisa, notes, recordedBy, createdAt];
+  List<GeneratedColumn> get $columns => [
+        id,
+        category,
+        amountPaisa,
+        paymentMode,
+        description,
+        recordedBy,
+        expenseDate,
+        createdAt
+      ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -4566,9 +4589,17 @@ class $ExpensesTable extends Expenses with TableInfo<$ExpensesTable, Expense> {
     } else if (isInserting) {
       context.missing(_amountPaisaMeta);
     }
-    if (data.containsKey('notes')) {
+    if (data.containsKey('payment_mode')) {
       context.handle(
-          _notesMeta, notes.isAcceptableOrUnknown(data['notes']!, _notesMeta));
+          _paymentModeMeta,
+          paymentMode.isAcceptableOrUnknown(
+              data['payment_mode']!, _paymentModeMeta));
+    }
+    if (data.containsKey('description')) {
+      context.handle(
+          _descriptionMeta,
+          description.isAcceptableOrUnknown(
+              data['description']!, _descriptionMeta));
     }
     if (data.containsKey('recorded_by')) {
       context.handle(
@@ -4577,6 +4608,14 @@ class $ExpensesTable extends Expenses with TableInfo<$ExpensesTable, Expense> {
               data['recorded_by']!, _recordedByMeta));
     } else if (isInserting) {
       context.missing(_recordedByMeta);
+    }
+    if (data.containsKey('expense_date')) {
+      context.handle(
+          _expenseDateMeta,
+          expenseDate.isAcceptableOrUnknown(
+              data['expense_date']!, _expenseDateMeta));
+    } else if (isInserting) {
+      context.missing(_expenseDateMeta);
     }
     if (data.containsKey('created_at')) {
       context.handle(_createdAtMeta,
@@ -4597,10 +4636,14 @@ class $ExpensesTable extends Expenses with TableInfo<$ExpensesTable, Expense> {
           .read(DriftSqlType.string, data['${effectivePrefix}category'])!,
       amountPaisa: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}amount_paisa'])!,
-      notes: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}notes']),
+      paymentMode: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}payment_mode'])!,
+      description: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}description']),
       recordedBy: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}recorded_by'])!,
+      expenseDate: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}expense_date'])!,
       createdAt: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
     );
@@ -4616,15 +4659,19 @@ class Expense extends DataClass implements Insertable<Expense> {
   final int id;
   final String category;
   final int amountPaisa;
-  final String? notes;
+  final String paymentMode;
+  final String? description;
   final int recordedBy;
+  final DateTime expenseDate;
   final DateTime createdAt;
   const Expense(
       {required this.id,
       required this.category,
       required this.amountPaisa,
-      this.notes,
+      required this.paymentMode,
+      this.description,
       required this.recordedBy,
+      required this.expenseDate,
       required this.createdAt});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -4632,10 +4679,12 @@ class Expense extends DataClass implements Insertable<Expense> {
     map['id'] = Variable<int>(id);
     map['category'] = Variable<String>(category);
     map['amount_paisa'] = Variable<int>(amountPaisa);
-    if (!nullToAbsent || notes != null) {
-      map['notes'] = Variable<String>(notes);
+    map['payment_mode'] = Variable<String>(paymentMode);
+    if (!nullToAbsent || description != null) {
+      map['description'] = Variable<String>(description);
     }
     map['recorded_by'] = Variable<int>(recordedBy);
+    map['expense_date'] = Variable<DateTime>(expenseDate);
     map['created_at'] = Variable<DateTime>(createdAt);
     return map;
   }
@@ -4645,9 +4694,12 @@ class Expense extends DataClass implements Insertable<Expense> {
       id: Value(id),
       category: Value(category),
       amountPaisa: Value(amountPaisa),
-      notes:
-          notes == null && nullToAbsent ? const Value.absent() : Value(notes),
+      paymentMode: Value(paymentMode),
+      description: description == null && nullToAbsent
+          ? const Value.absent()
+          : Value(description),
       recordedBy: Value(recordedBy),
+      expenseDate: Value(expenseDate),
       createdAt: Value(createdAt),
     );
   }
@@ -4659,8 +4711,10 @@ class Expense extends DataClass implements Insertable<Expense> {
       id: serializer.fromJson<int>(json['id']),
       category: serializer.fromJson<String>(json['category']),
       amountPaisa: serializer.fromJson<int>(json['amountPaisa']),
-      notes: serializer.fromJson<String?>(json['notes']),
+      paymentMode: serializer.fromJson<String>(json['paymentMode']),
+      description: serializer.fromJson<String?>(json['description']),
       recordedBy: serializer.fromJson<int>(json['recordedBy']),
+      expenseDate: serializer.fromJson<DateTime>(json['expenseDate']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
     );
   }
@@ -4671,8 +4725,10 @@ class Expense extends DataClass implements Insertable<Expense> {
       'id': serializer.toJson<int>(id),
       'category': serializer.toJson<String>(category),
       'amountPaisa': serializer.toJson<int>(amountPaisa),
-      'notes': serializer.toJson<String?>(notes),
+      'paymentMode': serializer.toJson<String>(paymentMode),
+      'description': serializer.toJson<String?>(description),
       'recordedBy': serializer.toJson<int>(recordedBy),
+      'expenseDate': serializer.toJson<DateTime>(expenseDate),
       'createdAt': serializer.toJson<DateTime>(createdAt),
     };
   }
@@ -4681,15 +4737,19 @@ class Expense extends DataClass implements Insertable<Expense> {
           {int? id,
           String? category,
           int? amountPaisa,
-          Value<String?> notes = const Value.absent(),
+          String? paymentMode,
+          Value<String?> description = const Value.absent(),
           int? recordedBy,
+          DateTime? expenseDate,
           DateTime? createdAt}) =>
       Expense(
         id: id ?? this.id,
         category: category ?? this.category,
         amountPaisa: amountPaisa ?? this.amountPaisa,
-        notes: notes.present ? notes.value : this.notes,
+        paymentMode: paymentMode ?? this.paymentMode,
+        description: description.present ? description.value : this.description,
         recordedBy: recordedBy ?? this.recordedBy,
+        expenseDate: expenseDate ?? this.expenseDate,
         createdAt: createdAt ?? this.createdAt,
       );
   Expense copyWithCompanion(ExpensesCompanion data) {
@@ -4698,9 +4758,14 @@ class Expense extends DataClass implements Insertable<Expense> {
       category: data.category.present ? data.category.value : this.category,
       amountPaisa:
           data.amountPaisa.present ? data.amountPaisa.value : this.amountPaisa,
-      notes: data.notes.present ? data.notes.value : this.notes,
+      paymentMode:
+          data.paymentMode.present ? data.paymentMode.value : this.paymentMode,
+      description:
+          data.description.present ? data.description.value : this.description,
       recordedBy:
           data.recordedBy.present ? data.recordedBy.value : this.recordedBy,
+      expenseDate:
+          data.expenseDate.present ? data.expenseDate.value : this.expenseDate,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
     );
   }
@@ -4711,16 +4776,18 @@ class Expense extends DataClass implements Insertable<Expense> {
           ..write('id: $id, ')
           ..write('category: $category, ')
           ..write('amountPaisa: $amountPaisa, ')
-          ..write('notes: $notes, ')
+          ..write('paymentMode: $paymentMode, ')
+          ..write('description: $description, ')
           ..write('recordedBy: $recordedBy, ')
+          ..write('expenseDate: $expenseDate, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, category, amountPaisa, notes, recordedBy, createdAt);
+  int get hashCode => Object.hash(id, category, amountPaisa, paymentMode,
+      description, recordedBy, expenseDate, createdAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -4728,8 +4795,10 @@ class Expense extends DataClass implements Insertable<Expense> {
           other.id == this.id &&
           other.category == this.category &&
           other.amountPaisa == this.amountPaisa &&
-          other.notes == this.notes &&
+          other.paymentMode == this.paymentMode &&
+          other.description == this.description &&
           other.recordedBy == this.recordedBy &&
+          other.expenseDate == this.expenseDate &&
           other.createdAt == this.createdAt);
 }
 
@@ -4737,41 +4806,52 @@ class ExpensesCompanion extends UpdateCompanion<Expense> {
   final Value<int> id;
   final Value<String> category;
   final Value<int> amountPaisa;
-  final Value<String?> notes;
+  final Value<String> paymentMode;
+  final Value<String?> description;
   final Value<int> recordedBy;
+  final Value<DateTime> expenseDate;
   final Value<DateTime> createdAt;
   const ExpensesCompanion({
     this.id = const Value.absent(),
     this.category = const Value.absent(),
     this.amountPaisa = const Value.absent(),
-    this.notes = const Value.absent(),
+    this.paymentMode = const Value.absent(),
+    this.description = const Value.absent(),
     this.recordedBy = const Value.absent(),
+    this.expenseDate = const Value.absent(),
     this.createdAt = const Value.absent(),
   });
   ExpensesCompanion.insert({
     this.id = const Value.absent(),
     required String category,
     required int amountPaisa,
-    this.notes = const Value.absent(),
+    this.paymentMode = const Value.absent(),
+    this.description = const Value.absent(),
     required int recordedBy,
+    required DateTime expenseDate,
     this.createdAt = const Value.absent(),
   })  : category = Value(category),
         amountPaisa = Value(amountPaisa),
-        recordedBy = Value(recordedBy);
+        recordedBy = Value(recordedBy),
+        expenseDate = Value(expenseDate);
   static Insertable<Expense> custom({
     Expression<int>? id,
     Expression<String>? category,
     Expression<int>? amountPaisa,
-    Expression<String>? notes,
+    Expression<String>? paymentMode,
+    Expression<String>? description,
     Expression<int>? recordedBy,
+    Expression<DateTime>? expenseDate,
     Expression<DateTime>? createdAt,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (category != null) 'category': category,
       if (amountPaisa != null) 'amount_paisa': amountPaisa,
-      if (notes != null) 'notes': notes,
+      if (paymentMode != null) 'payment_mode': paymentMode,
+      if (description != null) 'description': description,
       if (recordedBy != null) 'recorded_by': recordedBy,
+      if (expenseDate != null) 'expense_date': expenseDate,
       if (createdAt != null) 'created_at': createdAt,
     });
   }
@@ -4780,15 +4860,19 @@ class ExpensesCompanion extends UpdateCompanion<Expense> {
       {Value<int>? id,
       Value<String>? category,
       Value<int>? amountPaisa,
-      Value<String?>? notes,
+      Value<String>? paymentMode,
+      Value<String?>? description,
       Value<int>? recordedBy,
+      Value<DateTime>? expenseDate,
       Value<DateTime>? createdAt}) {
     return ExpensesCompanion(
       id: id ?? this.id,
       category: category ?? this.category,
       amountPaisa: amountPaisa ?? this.amountPaisa,
-      notes: notes ?? this.notes,
+      paymentMode: paymentMode ?? this.paymentMode,
+      description: description ?? this.description,
       recordedBy: recordedBy ?? this.recordedBy,
+      expenseDate: expenseDate ?? this.expenseDate,
       createdAt: createdAt ?? this.createdAt,
     );
   }
@@ -4805,11 +4889,17 @@ class ExpensesCompanion extends UpdateCompanion<Expense> {
     if (amountPaisa.present) {
       map['amount_paisa'] = Variable<int>(amountPaisa.value);
     }
-    if (notes.present) {
-      map['notes'] = Variable<String>(notes.value);
+    if (paymentMode.present) {
+      map['payment_mode'] = Variable<String>(paymentMode.value);
+    }
+    if (description.present) {
+      map['description'] = Variable<String>(description.value);
     }
     if (recordedBy.present) {
       map['recorded_by'] = Variable<int>(recordedBy.value);
+    }
+    if (expenseDate.present) {
+      map['expense_date'] = Variable<DateTime>(expenseDate.value);
     }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
@@ -4823,9 +4913,1640 @@ class ExpensesCompanion extends UpdateCompanion<Expense> {
           ..write('id: $id, ')
           ..write('category: $category, ')
           ..write('amountPaisa: $amountPaisa, ')
-          ..write('notes: $notes, ')
+          ..write('paymentMode: $paymentMode, ')
+          ..write('description: $description, ')
           ..write('recordedBy: $recordedBy, ')
+          ..write('expenseDate: $expenseDate, ')
           ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $RoutesTable extends Routes with TableInfo<$RoutesTable, Route> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $RoutesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      hasAutoIncrement: true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+      'name', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _cityMeta = const VerificationMeta('city');
+  @override
+  late final GeneratedColumn<String> city = GeneratedColumn<String>(
+      'city', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('Kot Samba'));
+  static const VerificationMeta _descriptionMeta =
+      const VerificationMeta('description');
+  @override
+  late final GeneratedColumn<String> description = GeneratedColumn<String>(
+      'description', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, false,
+      type: DriftSqlType.dateTime,
+      requiredDuringInsert: false,
+      clientDefault: () => DateTime.now());
+  @override
+  List<GeneratedColumn> get $columns =>
+      [id, name, city, description, createdAt];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'routes';
+  @override
+  VerificationContext validateIntegrity(Insertable<Route> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+          _nameMeta, name.isAcceptableOrUnknown(data['name']!, _nameMeta));
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('city')) {
+      context.handle(
+          _cityMeta, city.isAcceptableOrUnknown(data['city']!, _cityMeta));
+    }
+    if (data.containsKey('description')) {
+      context.handle(
+          _descriptionMeta,
+          description.isAcceptableOrUnknown(
+              data['description']!, _descriptionMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  Route map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return Route(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      name: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}name'])!,
+      city: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}city'])!,
+      description: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}description']),
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
+    );
+  }
+
+  @override
+  $RoutesTable createAlias(String alias) {
+    return $RoutesTable(attachedDatabase, alias);
+  }
+}
+
+class Route extends DataClass implements Insertable<Route> {
+  final int id;
+  final String name;
+  final String city;
+  final String? description;
+  final DateTime createdAt;
+  const Route(
+      {required this.id,
+      required this.name,
+      required this.city,
+      this.description,
+      required this.createdAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['name'] = Variable<String>(name);
+    map['city'] = Variable<String>(city);
+    if (!nullToAbsent || description != null) {
+      map['description'] = Variable<String>(description);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  RoutesCompanion toCompanion(bool nullToAbsent) {
+    return RoutesCompanion(
+      id: Value(id),
+      name: Value(name),
+      city: Value(city),
+      description: description == null && nullToAbsent
+          ? const Value.absent()
+          : Value(description),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory Route.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return Route(
+      id: serializer.fromJson<int>(json['id']),
+      name: serializer.fromJson<String>(json['name']),
+      city: serializer.fromJson<String>(json['city']),
+      description: serializer.fromJson<String?>(json['description']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'name': serializer.toJson<String>(name),
+      'city': serializer.toJson<String>(city),
+      'description': serializer.toJson<String?>(description),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  Route copyWith(
+          {int? id,
+          String? name,
+          String? city,
+          Value<String?> description = const Value.absent(),
+          DateTime? createdAt}) =>
+      Route(
+        id: id ?? this.id,
+        name: name ?? this.name,
+        city: city ?? this.city,
+        description: description.present ? description.value : this.description,
+        createdAt: createdAt ?? this.createdAt,
+      );
+  Route copyWithCompanion(RoutesCompanion data) {
+    return Route(
+      id: data.id.present ? data.id.value : this.id,
+      name: data.name.present ? data.name.value : this.name,
+      city: data.city.present ? data.city.value : this.city,
+      description:
+          data.description.present ? data.description.value : this.description,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('Route(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('city: $city, ')
+          ..write('description: $description, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, name, city, description, createdAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Route &&
+          other.id == this.id &&
+          other.name == this.name &&
+          other.city == this.city &&
+          other.description == this.description &&
+          other.createdAt == this.createdAt);
+}
+
+class RoutesCompanion extends UpdateCompanion<Route> {
+  final Value<int> id;
+  final Value<String> name;
+  final Value<String> city;
+  final Value<String?> description;
+  final Value<DateTime> createdAt;
+  const RoutesCompanion({
+    this.id = const Value.absent(),
+    this.name = const Value.absent(),
+    this.city = const Value.absent(),
+    this.description = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  });
+  RoutesCompanion.insert({
+    this.id = const Value.absent(),
+    required String name,
+    this.city = const Value.absent(),
+    this.description = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  }) : name = Value(name);
+  static Insertable<Route> custom({
+    Expression<int>? id,
+    Expression<String>? name,
+    Expression<String>? city,
+    Expression<String>? description,
+    Expression<DateTime>? createdAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (name != null) 'name': name,
+      if (city != null) 'city': city,
+      if (description != null) 'description': description,
+      if (createdAt != null) 'created_at': createdAt,
+    });
+  }
+
+  RoutesCompanion copyWith(
+      {Value<int>? id,
+      Value<String>? name,
+      Value<String>? city,
+      Value<String?>? description,
+      Value<DateTime>? createdAt}) {
+    return RoutesCompanion(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      city: city ?? this.city,
+      description: description ?? this.description,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (city.present) {
+      map['city'] = Variable<String>(city.value);
+    }
+    if (description.present) {
+      map['description'] = Variable<String>(description.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('RoutesCompanion(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('city: $city, ')
+          ..write('description: $description, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $EmployeesTable extends Employees
+    with TableInfo<$EmployeesTable, Employee> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $EmployeesTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      hasAutoIncrement: true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+  static const VerificationMeta _nameMeta = const VerificationMeta('name');
+  @override
+  late final GeneratedColumn<String> name = GeneratedColumn<String>(
+      'name', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _phoneMeta = const VerificationMeta('phone');
+  @override
+  late final GeneratedColumn<String> phone = GeneratedColumn<String>(
+      'phone', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _roleMeta = const VerificationMeta('role');
+  @override
+  late final GeneratedColumn<String> role = GeneratedColumn<String>(
+      'role', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _assignedRouteIdMeta =
+      const VerificationMeta('assignedRouteId');
+  @override
+  late final GeneratedColumn<int> assignedRouteId = GeneratedColumn<int>(
+      'assigned_route_id', aliasedName, true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('REFERENCES routes (id)'));
+  static const VerificationMeta _monthlySalaryPaisaMeta =
+      const VerificationMeta('monthlySalaryPaisa');
+  @override
+  late final GeneratedColumn<int> monthlySalaryPaisa = GeneratedColumn<int>(
+      'monthly_salary_paisa', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _isActiveMeta =
+      const VerificationMeta('isActive');
+  @override
+  late final GeneratedColumn<bool> isActive = GeneratedColumn<bool>(
+      'is_active', aliasedName, false,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("is_active" IN (0, 1))'),
+      defaultValue: const Constant(true));
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, false,
+      type: DriftSqlType.dateTime,
+      requiredDuringInsert: false,
+      clientDefault: () => DateTime.now());
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        name,
+        phone,
+        role,
+        assignedRouteId,
+        monthlySalaryPaisa,
+        isActive,
+        createdAt
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'employees';
+  @override
+  VerificationContext validateIntegrity(Insertable<Employee> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('name')) {
+      context.handle(
+          _nameMeta, name.isAcceptableOrUnknown(data['name']!, _nameMeta));
+    } else if (isInserting) {
+      context.missing(_nameMeta);
+    }
+    if (data.containsKey('phone')) {
+      context.handle(
+          _phoneMeta, phone.isAcceptableOrUnknown(data['phone']!, _phoneMeta));
+    }
+    if (data.containsKey('role')) {
+      context.handle(
+          _roleMeta, role.isAcceptableOrUnknown(data['role']!, _roleMeta));
+    } else if (isInserting) {
+      context.missing(_roleMeta);
+    }
+    if (data.containsKey('assigned_route_id')) {
+      context.handle(
+          _assignedRouteIdMeta,
+          assignedRouteId.isAcceptableOrUnknown(
+              data['assigned_route_id']!, _assignedRouteIdMeta));
+    }
+    if (data.containsKey('monthly_salary_paisa')) {
+      context.handle(
+          _monthlySalaryPaisaMeta,
+          monthlySalaryPaisa.isAcceptableOrUnknown(
+              data['monthly_salary_paisa']!, _monthlySalaryPaisaMeta));
+    }
+    if (data.containsKey('is_active')) {
+      context.handle(_isActiveMeta,
+          isActive.isAcceptableOrUnknown(data['is_active']!, _isActiveMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  Employee map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return Employee(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      name: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}name'])!,
+      phone: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}phone']),
+      role: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}role'])!,
+      assignedRouteId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}assigned_route_id']),
+      monthlySalaryPaisa: attachedDatabase.typeMapping.read(
+          DriftSqlType.int, data['${effectivePrefix}monthly_salary_paisa'])!,
+      isActive: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}is_active'])!,
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
+    );
+  }
+
+  @override
+  $EmployeesTable createAlias(String alias) {
+    return $EmployeesTable(attachedDatabase, alias);
+  }
+}
+
+class Employee extends DataClass implements Insertable<Employee> {
+  final int id;
+  final String name;
+  final String? phone;
+  final String role;
+  final int? assignedRouteId;
+  final int monthlySalaryPaisa;
+  final bool isActive;
+  final DateTime createdAt;
+  const Employee(
+      {required this.id,
+      required this.name,
+      this.phone,
+      required this.role,
+      this.assignedRouteId,
+      required this.monthlySalaryPaisa,
+      required this.isActive,
+      required this.createdAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['name'] = Variable<String>(name);
+    if (!nullToAbsent || phone != null) {
+      map['phone'] = Variable<String>(phone);
+    }
+    map['role'] = Variable<String>(role);
+    if (!nullToAbsent || assignedRouteId != null) {
+      map['assigned_route_id'] = Variable<int>(assignedRouteId);
+    }
+    map['monthly_salary_paisa'] = Variable<int>(monthlySalaryPaisa);
+    map['is_active'] = Variable<bool>(isActive);
+    map['created_at'] = Variable<DateTime>(createdAt);
+    return map;
+  }
+
+  EmployeesCompanion toCompanion(bool nullToAbsent) {
+    return EmployeesCompanion(
+      id: Value(id),
+      name: Value(name),
+      phone:
+          phone == null && nullToAbsent ? const Value.absent() : Value(phone),
+      role: Value(role),
+      assignedRouteId: assignedRouteId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(assignedRouteId),
+      monthlySalaryPaisa: Value(monthlySalaryPaisa),
+      isActive: Value(isActive),
+      createdAt: Value(createdAt),
+    );
+  }
+
+  factory Employee.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return Employee(
+      id: serializer.fromJson<int>(json['id']),
+      name: serializer.fromJson<String>(json['name']),
+      phone: serializer.fromJson<String?>(json['phone']),
+      role: serializer.fromJson<String>(json['role']),
+      assignedRouteId: serializer.fromJson<int?>(json['assignedRouteId']),
+      monthlySalaryPaisa: serializer.fromJson<int>(json['monthlySalaryPaisa']),
+      isActive: serializer.fromJson<bool>(json['isActive']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'name': serializer.toJson<String>(name),
+      'phone': serializer.toJson<String?>(phone),
+      'role': serializer.toJson<String>(role),
+      'assignedRouteId': serializer.toJson<int?>(assignedRouteId),
+      'monthlySalaryPaisa': serializer.toJson<int>(monthlySalaryPaisa),
+      'isActive': serializer.toJson<bool>(isActive),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+    };
+  }
+
+  Employee copyWith(
+          {int? id,
+          String? name,
+          Value<String?> phone = const Value.absent(),
+          String? role,
+          Value<int?> assignedRouteId = const Value.absent(),
+          int? monthlySalaryPaisa,
+          bool? isActive,
+          DateTime? createdAt}) =>
+      Employee(
+        id: id ?? this.id,
+        name: name ?? this.name,
+        phone: phone.present ? phone.value : this.phone,
+        role: role ?? this.role,
+        assignedRouteId: assignedRouteId.present
+            ? assignedRouteId.value
+            : this.assignedRouteId,
+        monthlySalaryPaisa: monthlySalaryPaisa ?? this.monthlySalaryPaisa,
+        isActive: isActive ?? this.isActive,
+        createdAt: createdAt ?? this.createdAt,
+      );
+  Employee copyWithCompanion(EmployeesCompanion data) {
+    return Employee(
+      id: data.id.present ? data.id.value : this.id,
+      name: data.name.present ? data.name.value : this.name,
+      phone: data.phone.present ? data.phone.value : this.phone,
+      role: data.role.present ? data.role.value : this.role,
+      assignedRouteId: data.assignedRouteId.present
+          ? data.assignedRouteId.value
+          : this.assignedRouteId,
+      monthlySalaryPaisa: data.monthlySalaryPaisa.present
+          ? data.monthlySalaryPaisa.value
+          : this.monthlySalaryPaisa,
+      isActive: data.isActive.present ? data.isActive.value : this.isActive,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('Employee(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('phone: $phone, ')
+          ..write('role: $role, ')
+          ..write('assignedRouteId: $assignedRouteId, ')
+          ..write('monthlySalaryPaisa: $monthlySalaryPaisa, ')
+          ..write('isActive: $isActive, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, name, phone, role, assignedRouteId,
+      monthlySalaryPaisa, isActive, createdAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is Employee &&
+          other.id == this.id &&
+          other.name == this.name &&
+          other.phone == this.phone &&
+          other.role == this.role &&
+          other.assignedRouteId == this.assignedRouteId &&
+          other.monthlySalaryPaisa == this.monthlySalaryPaisa &&
+          other.isActive == this.isActive &&
+          other.createdAt == this.createdAt);
+}
+
+class EmployeesCompanion extends UpdateCompanion<Employee> {
+  final Value<int> id;
+  final Value<String> name;
+  final Value<String?> phone;
+  final Value<String> role;
+  final Value<int?> assignedRouteId;
+  final Value<int> monthlySalaryPaisa;
+  final Value<bool> isActive;
+  final Value<DateTime> createdAt;
+  const EmployeesCompanion({
+    this.id = const Value.absent(),
+    this.name = const Value.absent(),
+    this.phone = const Value.absent(),
+    this.role = const Value.absent(),
+    this.assignedRouteId = const Value.absent(),
+    this.monthlySalaryPaisa = const Value.absent(),
+    this.isActive = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  });
+  EmployeesCompanion.insert({
+    this.id = const Value.absent(),
+    required String name,
+    this.phone = const Value.absent(),
+    required String role,
+    this.assignedRouteId = const Value.absent(),
+    this.monthlySalaryPaisa = const Value.absent(),
+    this.isActive = const Value.absent(),
+    this.createdAt = const Value.absent(),
+  })  : name = Value(name),
+        role = Value(role);
+  static Insertable<Employee> custom({
+    Expression<int>? id,
+    Expression<String>? name,
+    Expression<String>? phone,
+    Expression<String>? role,
+    Expression<int>? assignedRouteId,
+    Expression<int>? monthlySalaryPaisa,
+    Expression<bool>? isActive,
+    Expression<DateTime>? createdAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (name != null) 'name': name,
+      if (phone != null) 'phone': phone,
+      if (role != null) 'role': role,
+      if (assignedRouteId != null) 'assigned_route_id': assignedRouteId,
+      if (monthlySalaryPaisa != null)
+        'monthly_salary_paisa': monthlySalaryPaisa,
+      if (isActive != null) 'is_active': isActive,
+      if (createdAt != null) 'created_at': createdAt,
+    });
+  }
+
+  EmployeesCompanion copyWith(
+      {Value<int>? id,
+      Value<String>? name,
+      Value<String?>? phone,
+      Value<String>? role,
+      Value<int?>? assignedRouteId,
+      Value<int>? monthlySalaryPaisa,
+      Value<bool>? isActive,
+      Value<DateTime>? createdAt}) {
+    return EmployeesCompanion(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      phone: phone ?? this.phone,
+      role: role ?? this.role,
+      assignedRouteId: assignedRouteId ?? this.assignedRouteId,
+      monthlySalaryPaisa: monthlySalaryPaisa ?? this.monthlySalaryPaisa,
+      isActive: isActive ?? this.isActive,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (name.present) {
+      map['name'] = Variable<String>(name.value);
+    }
+    if (phone.present) {
+      map['phone'] = Variable<String>(phone.value);
+    }
+    if (role.present) {
+      map['role'] = Variable<String>(role.value);
+    }
+    if (assignedRouteId.present) {
+      map['assigned_route_id'] = Variable<int>(assignedRouteId.value);
+    }
+    if (monthlySalaryPaisa.present) {
+      map['monthly_salary_paisa'] = Variable<int>(monthlySalaryPaisa.value);
+    }
+    if (isActive.present) {
+      map['is_active'] = Variable<bool>(isActive.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('EmployeesCompanion(')
+          ..write('id: $id, ')
+          ..write('name: $name, ')
+          ..write('phone: $phone, ')
+          ..write('role: $role, ')
+          ..write('assignedRouteId: $assignedRouteId, ')
+          ..write('monthlySalaryPaisa: $monthlySalaryPaisa, ')
+          ..write('isActive: $isActive, ')
+          ..write('createdAt: $createdAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $ReturnClaimsTable extends ReturnClaims
+    with TableInfo<$ReturnClaimsTable, ReturnClaim> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ReturnClaimsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      hasAutoIncrement: true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+  static const VerificationMeta _saleIdMeta = const VerificationMeta('saleId');
+  @override
+  late final GeneratedColumn<int> saleId = GeneratedColumn<int>(
+      'sale_id', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: true,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('REFERENCES sales (id)'));
+  static const VerificationMeta _requestedByMeta =
+      const VerificationMeta('requestedBy');
+  @override
+  late final GeneratedColumn<int> requestedBy = GeneratedColumn<int>(
+      'requested_by', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: true,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('REFERENCES users (id)'));
+  static const VerificationMeta _approvedByMeta =
+      const VerificationMeta('approvedBy');
+  @override
+  late final GeneratedColumn<int> approvedBy = GeneratedColumn<int>(
+      'approved_by', aliasedName, true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('REFERENCES users (id)'));
+  static const VerificationMeta _claimStatusMeta =
+      const VerificationMeta('claimStatus');
+  @override
+  late final GeneratedColumn<String> claimStatus = GeneratedColumn<String>(
+      'claim_status', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('PENDING'));
+  static const VerificationMeta _totalRefundAmountPaisaMeta =
+      const VerificationMeta('totalRefundAmountPaisa');
+  @override
+  late final GeneratedColumn<int> totalRefundAmountPaisa = GeneratedColumn<int>(
+      'total_refund_amount_paisa', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _rejectionReasonMeta =
+      const VerificationMeta('rejectionReason');
+  @override
+  late final GeneratedColumn<String> rejectionReason = GeneratedColumn<String>(
+      'rejection_reason', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _createdAtMeta =
+      const VerificationMeta('createdAt');
+  @override
+  late final GeneratedColumn<DateTime> createdAt = GeneratedColumn<DateTime>(
+      'created_at', aliasedName, false,
+      type: DriftSqlType.dateTime,
+      requiredDuringInsert: false,
+      clientDefault: () => DateTime.now());
+  static const VerificationMeta _updatedAtMeta =
+      const VerificationMeta('updatedAt');
+  @override
+  late final GeneratedColumn<DateTime> updatedAt = GeneratedColumn<DateTime>(
+      'updated_at', aliasedName, false,
+      type: DriftSqlType.dateTime,
+      requiredDuringInsert: false,
+      clientDefault: () => DateTime.now());
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        saleId,
+        requestedBy,
+        approvedBy,
+        claimStatus,
+        totalRefundAmountPaisa,
+        rejectionReason,
+        createdAt,
+        updatedAt
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'return_claims';
+  @override
+  VerificationContext validateIntegrity(Insertable<ReturnClaim> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('sale_id')) {
+      context.handle(_saleIdMeta,
+          saleId.isAcceptableOrUnknown(data['sale_id']!, _saleIdMeta));
+    } else if (isInserting) {
+      context.missing(_saleIdMeta);
+    }
+    if (data.containsKey('requested_by')) {
+      context.handle(
+          _requestedByMeta,
+          requestedBy.isAcceptableOrUnknown(
+              data['requested_by']!, _requestedByMeta));
+    } else if (isInserting) {
+      context.missing(_requestedByMeta);
+    }
+    if (data.containsKey('approved_by')) {
+      context.handle(
+          _approvedByMeta,
+          approvedBy.isAcceptableOrUnknown(
+              data['approved_by']!, _approvedByMeta));
+    }
+    if (data.containsKey('claim_status')) {
+      context.handle(
+          _claimStatusMeta,
+          claimStatus.isAcceptableOrUnknown(
+              data['claim_status']!, _claimStatusMeta));
+    }
+    if (data.containsKey('total_refund_amount_paisa')) {
+      context.handle(
+          _totalRefundAmountPaisaMeta,
+          totalRefundAmountPaisa.isAcceptableOrUnknown(
+              data['total_refund_amount_paisa']!, _totalRefundAmountPaisaMeta));
+    } else if (isInserting) {
+      context.missing(_totalRefundAmountPaisaMeta);
+    }
+    if (data.containsKey('rejection_reason')) {
+      context.handle(
+          _rejectionReasonMeta,
+          rejectionReason.isAcceptableOrUnknown(
+              data['rejection_reason']!, _rejectionReasonMeta));
+    }
+    if (data.containsKey('created_at')) {
+      context.handle(_createdAtMeta,
+          createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta));
+    }
+    if (data.containsKey('updated_at')) {
+      context.handle(_updatedAtMeta,
+          updatedAt.isAcceptableOrUnknown(data['updated_at']!, _updatedAtMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ReturnClaim map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ReturnClaim(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      saleId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}sale_id'])!,
+      requestedBy: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}requested_by'])!,
+      approvedBy: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}approved_by']),
+      claimStatus: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}claim_status'])!,
+      totalRefundAmountPaisa: attachedDatabase.typeMapping.read(
+          DriftSqlType.int,
+          data['${effectivePrefix}total_refund_amount_paisa'])!,
+      rejectionReason: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}rejection_reason']),
+      createdAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
+      updatedAt: attachedDatabase.typeMapping
+          .read(DriftSqlType.dateTime, data['${effectivePrefix}updated_at'])!,
+    );
+  }
+
+  @override
+  $ReturnClaimsTable createAlias(String alias) {
+    return $ReturnClaimsTable(attachedDatabase, alias);
+  }
+}
+
+class ReturnClaim extends DataClass implements Insertable<ReturnClaim> {
+  final int id;
+  final int saleId;
+  final int requestedBy;
+  final int? approvedBy;
+  final String claimStatus;
+  final int totalRefundAmountPaisa;
+  final String? rejectionReason;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  const ReturnClaim(
+      {required this.id,
+      required this.saleId,
+      required this.requestedBy,
+      this.approvedBy,
+      required this.claimStatus,
+      required this.totalRefundAmountPaisa,
+      this.rejectionReason,
+      required this.createdAt,
+      required this.updatedAt});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['sale_id'] = Variable<int>(saleId);
+    map['requested_by'] = Variable<int>(requestedBy);
+    if (!nullToAbsent || approvedBy != null) {
+      map['approved_by'] = Variable<int>(approvedBy);
+    }
+    map['claim_status'] = Variable<String>(claimStatus);
+    map['total_refund_amount_paisa'] = Variable<int>(totalRefundAmountPaisa);
+    if (!nullToAbsent || rejectionReason != null) {
+      map['rejection_reason'] = Variable<String>(rejectionReason);
+    }
+    map['created_at'] = Variable<DateTime>(createdAt);
+    map['updated_at'] = Variable<DateTime>(updatedAt);
+    return map;
+  }
+
+  ReturnClaimsCompanion toCompanion(bool nullToAbsent) {
+    return ReturnClaimsCompanion(
+      id: Value(id),
+      saleId: Value(saleId),
+      requestedBy: Value(requestedBy),
+      approvedBy: approvedBy == null && nullToAbsent
+          ? const Value.absent()
+          : Value(approvedBy),
+      claimStatus: Value(claimStatus),
+      totalRefundAmountPaisa: Value(totalRefundAmountPaisa),
+      rejectionReason: rejectionReason == null && nullToAbsent
+          ? const Value.absent()
+          : Value(rejectionReason),
+      createdAt: Value(createdAt),
+      updatedAt: Value(updatedAt),
+    );
+  }
+
+  factory ReturnClaim.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ReturnClaim(
+      id: serializer.fromJson<int>(json['id']),
+      saleId: serializer.fromJson<int>(json['saleId']),
+      requestedBy: serializer.fromJson<int>(json['requestedBy']),
+      approvedBy: serializer.fromJson<int?>(json['approvedBy']),
+      claimStatus: serializer.fromJson<String>(json['claimStatus']),
+      totalRefundAmountPaisa:
+          serializer.fromJson<int>(json['totalRefundAmountPaisa']),
+      rejectionReason: serializer.fromJson<String?>(json['rejectionReason']),
+      createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      updatedAt: serializer.fromJson<DateTime>(json['updatedAt']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'saleId': serializer.toJson<int>(saleId),
+      'requestedBy': serializer.toJson<int>(requestedBy),
+      'approvedBy': serializer.toJson<int?>(approvedBy),
+      'claimStatus': serializer.toJson<String>(claimStatus),
+      'totalRefundAmountPaisa': serializer.toJson<int>(totalRefundAmountPaisa),
+      'rejectionReason': serializer.toJson<String?>(rejectionReason),
+      'createdAt': serializer.toJson<DateTime>(createdAt),
+      'updatedAt': serializer.toJson<DateTime>(updatedAt),
+    };
+  }
+
+  ReturnClaim copyWith(
+          {int? id,
+          int? saleId,
+          int? requestedBy,
+          Value<int?> approvedBy = const Value.absent(),
+          String? claimStatus,
+          int? totalRefundAmountPaisa,
+          Value<String?> rejectionReason = const Value.absent(),
+          DateTime? createdAt,
+          DateTime? updatedAt}) =>
+      ReturnClaim(
+        id: id ?? this.id,
+        saleId: saleId ?? this.saleId,
+        requestedBy: requestedBy ?? this.requestedBy,
+        approvedBy: approvedBy.present ? approvedBy.value : this.approvedBy,
+        claimStatus: claimStatus ?? this.claimStatus,
+        totalRefundAmountPaisa:
+            totalRefundAmountPaisa ?? this.totalRefundAmountPaisa,
+        rejectionReason: rejectionReason.present
+            ? rejectionReason.value
+            : this.rejectionReason,
+        createdAt: createdAt ?? this.createdAt,
+        updatedAt: updatedAt ?? this.updatedAt,
+      );
+  ReturnClaim copyWithCompanion(ReturnClaimsCompanion data) {
+    return ReturnClaim(
+      id: data.id.present ? data.id.value : this.id,
+      saleId: data.saleId.present ? data.saleId.value : this.saleId,
+      requestedBy:
+          data.requestedBy.present ? data.requestedBy.value : this.requestedBy,
+      approvedBy:
+          data.approvedBy.present ? data.approvedBy.value : this.approvedBy,
+      claimStatus:
+          data.claimStatus.present ? data.claimStatus.value : this.claimStatus,
+      totalRefundAmountPaisa: data.totalRefundAmountPaisa.present
+          ? data.totalRefundAmountPaisa.value
+          : this.totalRefundAmountPaisa,
+      rejectionReason: data.rejectionReason.present
+          ? data.rejectionReason.value
+          : this.rejectionReason,
+      createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      updatedAt: data.updatedAt.present ? data.updatedAt.value : this.updatedAt,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ReturnClaim(')
+          ..write('id: $id, ')
+          ..write('saleId: $saleId, ')
+          ..write('requestedBy: $requestedBy, ')
+          ..write('approvedBy: $approvedBy, ')
+          ..write('claimStatus: $claimStatus, ')
+          ..write('totalRefundAmountPaisa: $totalRefundAmountPaisa, ')
+          ..write('rejectionReason: $rejectionReason, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(
+      id,
+      saleId,
+      requestedBy,
+      approvedBy,
+      claimStatus,
+      totalRefundAmountPaisa,
+      rejectionReason,
+      createdAt,
+      updatedAt);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ReturnClaim &&
+          other.id == this.id &&
+          other.saleId == this.saleId &&
+          other.requestedBy == this.requestedBy &&
+          other.approvedBy == this.approvedBy &&
+          other.claimStatus == this.claimStatus &&
+          other.totalRefundAmountPaisa == this.totalRefundAmountPaisa &&
+          other.rejectionReason == this.rejectionReason &&
+          other.createdAt == this.createdAt &&
+          other.updatedAt == this.updatedAt);
+}
+
+class ReturnClaimsCompanion extends UpdateCompanion<ReturnClaim> {
+  final Value<int> id;
+  final Value<int> saleId;
+  final Value<int> requestedBy;
+  final Value<int?> approvedBy;
+  final Value<String> claimStatus;
+  final Value<int> totalRefundAmountPaisa;
+  final Value<String?> rejectionReason;
+  final Value<DateTime> createdAt;
+  final Value<DateTime> updatedAt;
+  const ReturnClaimsCompanion({
+    this.id = const Value.absent(),
+    this.saleId = const Value.absent(),
+    this.requestedBy = const Value.absent(),
+    this.approvedBy = const Value.absent(),
+    this.claimStatus = const Value.absent(),
+    this.totalRefundAmountPaisa = const Value.absent(),
+    this.rejectionReason = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+  });
+  ReturnClaimsCompanion.insert({
+    this.id = const Value.absent(),
+    required int saleId,
+    required int requestedBy,
+    this.approvedBy = const Value.absent(),
+    this.claimStatus = const Value.absent(),
+    required int totalRefundAmountPaisa,
+    this.rejectionReason = const Value.absent(),
+    this.createdAt = const Value.absent(),
+    this.updatedAt = const Value.absent(),
+  })  : saleId = Value(saleId),
+        requestedBy = Value(requestedBy),
+        totalRefundAmountPaisa = Value(totalRefundAmountPaisa);
+  static Insertable<ReturnClaim> custom({
+    Expression<int>? id,
+    Expression<int>? saleId,
+    Expression<int>? requestedBy,
+    Expression<int>? approvedBy,
+    Expression<String>? claimStatus,
+    Expression<int>? totalRefundAmountPaisa,
+    Expression<String>? rejectionReason,
+    Expression<DateTime>? createdAt,
+    Expression<DateTime>? updatedAt,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (saleId != null) 'sale_id': saleId,
+      if (requestedBy != null) 'requested_by': requestedBy,
+      if (approvedBy != null) 'approved_by': approvedBy,
+      if (claimStatus != null) 'claim_status': claimStatus,
+      if (totalRefundAmountPaisa != null)
+        'total_refund_amount_paisa': totalRefundAmountPaisa,
+      if (rejectionReason != null) 'rejection_reason': rejectionReason,
+      if (createdAt != null) 'created_at': createdAt,
+      if (updatedAt != null) 'updated_at': updatedAt,
+    });
+  }
+
+  ReturnClaimsCompanion copyWith(
+      {Value<int>? id,
+      Value<int>? saleId,
+      Value<int>? requestedBy,
+      Value<int?>? approvedBy,
+      Value<String>? claimStatus,
+      Value<int>? totalRefundAmountPaisa,
+      Value<String?>? rejectionReason,
+      Value<DateTime>? createdAt,
+      Value<DateTime>? updatedAt}) {
+    return ReturnClaimsCompanion(
+      id: id ?? this.id,
+      saleId: saleId ?? this.saleId,
+      requestedBy: requestedBy ?? this.requestedBy,
+      approvedBy: approvedBy ?? this.approvedBy,
+      claimStatus: claimStatus ?? this.claimStatus,
+      totalRefundAmountPaisa:
+          totalRefundAmountPaisa ?? this.totalRefundAmountPaisa,
+      rejectionReason: rejectionReason ?? this.rejectionReason,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (saleId.present) {
+      map['sale_id'] = Variable<int>(saleId.value);
+    }
+    if (requestedBy.present) {
+      map['requested_by'] = Variable<int>(requestedBy.value);
+    }
+    if (approvedBy.present) {
+      map['approved_by'] = Variable<int>(approvedBy.value);
+    }
+    if (claimStatus.present) {
+      map['claim_status'] = Variable<String>(claimStatus.value);
+    }
+    if (totalRefundAmountPaisa.present) {
+      map['total_refund_amount_paisa'] =
+          Variable<int>(totalRefundAmountPaisa.value);
+    }
+    if (rejectionReason.present) {
+      map['rejection_reason'] = Variable<String>(rejectionReason.value);
+    }
+    if (createdAt.present) {
+      map['created_at'] = Variable<DateTime>(createdAt.value);
+    }
+    if (updatedAt.present) {
+      map['updated_at'] = Variable<DateTime>(updatedAt.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ReturnClaimsCompanion(')
+          ..write('id: $id, ')
+          ..write('saleId: $saleId, ')
+          ..write('requestedBy: $requestedBy, ')
+          ..write('approvedBy: $approvedBy, ')
+          ..write('claimStatus: $claimStatus, ')
+          ..write('totalRefundAmountPaisa: $totalRefundAmountPaisa, ')
+          ..write('rejectionReason: $rejectionReason, ')
+          ..write('createdAt: $createdAt, ')
+          ..write('updatedAt: $updatedAt')
+          ..write(')'))
+        .toString();
+  }
+}
+
+class $ReturnClaimItemsTable extends ReturnClaimItems
+    with TableInfo<$ReturnClaimItemsTable, ReturnClaimItem> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $ReturnClaimItemsTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<int> id = GeneratedColumn<int>(
+      'id', aliasedName, false,
+      hasAutoIncrement: true,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+  static const VerificationMeta _claimIdMeta =
+      const VerificationMeta('claimId');
+  @override
+  late final GeneratedColumn<int> claimId = GeneratedColumn<int>(
+      'claim_id', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: true,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('REFERENCES return_claims (id)'));
+  static const VerificationMeta _partIdMeta = const VerificationMeta('partId');
+  @override
+  late final GeneratedColumn<int> partId = GeneratedColumn<int>(
+      'part_id', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: true,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('REFERENCES parts (id)'));
+  static const VerificationMeta _quantityMeta =
+      const VerificationMeta('quantity');
+  @override
+  late final GeneratedColumn<int> quantity = GeneratedColumn<int>(
+      'quantity', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _refundRatePaisaMeta =
+      const VerificationMeta('refundRatePaisa');
+  @override
+  late final GeneratedColumn<int> refundRatePaisa = GeneratedColumn<int>(
+      'refund_rate_paisa', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _lineRefundTotalPaisaMeta =
+      const VerificationMeta('lineRefundTotalPaisa');
+  @override
+  late final GeneratedColumn<int> lineRefundTotalPaisa = GeneratedColumn<int>(
+      'line_refund_total_paisa', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _inventoryDispositionMeta =
+      const VerificationMeta('inventoryDisposition');
+  @override
+  late final GeneratedColumn<String> inventoryDisposition =
+      GeneratedColumn<String>('inventory_disposition', aliasedName, false,
+          type: DriftSqlType.string,
+          requiredDuringInsert: false,
+          defaultValue: const Constant('SELLABLE'));
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        claimId,
+        partId,
+        quantity,
+        refundRatePaisa,
+        lineRefundTotalPaisa,
+        inventoryDisposition
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'return_claim_items';
+  @override
+  VerificationContext validateIntegrity(Insertable<ReturnClaimItem> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('claim_id')) {
+      context.handle(_claimIdMeta,
+          claimId.isAcceptableOrUnknown(data['claim_id']!, _claimIdMeta));
+    } else if (isInserting) {
+      context.missing(_claimIdMeta);
+    }
+    if (data.containsKey('part_id')) {
+      context.handle(_partIdMeta,
+          partId.isAcceptableOrUnknown(data['part_id']!, _partIdMeta));
+    } else if (isInserting) {
+      context.missing(_partIdMeta);
+    }
+    if (data.containsKey('quantity')) {
+      context.handle(_quantityMeta,
+          quantity.isAcceptableOrUnknown(data['quantity']!, _quantityMeta));
+    } else if (isInserting) {
+      context.missing(_quantityMeta);
+    }
+    if (data.containsKey('refund_rate_paisa')) {
+      context.handle(
+          _refundRatePaisaMeta,
+          refundRatePaisa.isAcceptableOrUnknown(
+              data['refund_rate_paisa']!, _refundRatePaisaMeta));
+    } else if (isInserting) {
+      context.missing(_refundRatePaisaMeta);
+    }
+    if (data.containsKey('line_refund_total_paisa')) {
+      context.handle(
+          _lineRefundTotalPaisaMeta,
+          lineRefundTotalPaisa.isAcceptableOrUnknown(
+              data['line_refund_total_paisa']!, _lineRefundTotalPaisaMeta));
+    } else if (isInserting) {
+      context.missing(_lineRefundTotalPaisaMeta);
+    }
+    if (data.containsKey('inventory_disposition')) {
+      context.handle(
+          _inventoryDispositionMeta,
+          inventoryDisposition.isAcceptableOrUnknown(
+              data['inventory_disposition']!, _inventoryDispositionMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {id};
+  @override
+  ReturnClaimItem map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return ReturnClaimItem(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      claimId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}claim_id'])!,
+      partId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}part_id'])!,
+      quantity: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}quantity'])!,
+      refundRatePaisa: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}refund_rate_paisa'])!,
+      lineRefundTotalPaisa: attachedDatabase.typeMapping.read(
+          DriftSqlType.int, data['${effectivePrefix}line_refund_total_paisa'])!,
+      inventoryDisposition: attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}inventory_disposition'])!,
+    );
+  }
+
+  @override
+  $ReturnClaimItemsTable createAlias(String alias) {
+    return $ReturnClaimItemsTable(attachedDatabase, alias);
+  }
+}
+
+class ReturnClaimItem extends DataClass implements Insertable<ReturnClaimItem> {
+  final int id;
+  final int claimId;
+  final int partId;
+  final int quantity;
+  final int refundRatePaisa;
+  final int lineRefundTotalPaisa;
+  final String inventoryDisposition;
+  const ReturnClaimItem(
+      {required this.id,
+      required this.claimId,
+      required this.partId,
+      required this.quantity,
+      required this.refundRatePaisa,
+      required this.lineRefundTotalPaisa,
+      required this.inventoryDisposition});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    map['id'] = Variable<int>(id);
+    map['claim_id'] = Variable<int>(claimId);
+    map['part_id'] = Variable<int>(partId);
+    map['quantity'] = Variable<int>(quantity);
+    map['refund_rate_paisa'] = Variable<int>(refundRatePaisa);
+    map['line_refund_total_paisa'] = Variable<int>(lineRefundTotalPaisa);
+    map['inventory_disposition'] = Variable<String>(inventoryDisposition);
+    return map;
+  }
+
+  ReturnClaimItemsCompanion toCompanion(bool nullToAbsent) {
+    return ReturnClaimItemsCompanion(
+      id: Value(id),
+      claimId: Value(claimId),
+      partId: Value(partId),
+      quantity: Value(quantity),
+      refundRatePaisa: Value(refundRatePaisa),
+      lineRefundTotalPaisa: Value(lineRefundTotalPaisa),
+      inventoryDisposition: Value(inventoryDisposition),
+    );
+  }
+
+  factory ReturnClaimItem.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return ReturnClaimItem(
+      id: serializer.fromJson<int>(json['id']),
+      claimId: serializer.fromJson<int>(json['claimId']),
+      partId: serializer.fromJson<int>(json['partId']),
+      quantity: serializer.fromJson<int>(json['quantity']),
+      refundRatePaisa: serializer.fromJson<int>(json['refundRatePaisa']),
+      lineRefundTotalPaisa:
+          serializer.fromJson<int>(json['lineRefundTotalPaisa']),
+      inventoryDisposition:
+          serializer.fromJson<String>(json['inventoryDisposition']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<int>(id),
+      'claimId': serializer.toJson<int>(claimId),
+      'partId': serializer.toJson<int>(partId),
+      'quantity': serializer.toJson<int>(quantity),
+      'refundRatePaisa': serializer.toJson<int>(refundRatePaisa),
+      'lineRefundTotalPaisa': serializer.toJson<int>(lineRefundTotalPaisa),
+      'inventoryDisposition': serializer.toJson<String>(inventoryDisposition),
+    };
+  }
+
+  ReturnClaimItem copyWith(
+          {int? id,
+          int? claimId,
+          int? partId,
+          int? quantity,
+          int? refundRatePaisa,
+          int? lineRefundTotalPaisa,
+          String? inventoryDisposition}) =>
+      ReturnClaimItem(
+        id: id ?? this.id,
+        claimId: claimId ?? this.claimId,
+        partId: partId ?? this.partId,
+        quantity: quantity ?? this.quantity,
+        refundRatePaisa: refundRatePaisa ?? this.refundRatePaisa,
+        lineRefundTotalPaisa: lineRefundTotalPaisa ?? this.lineRefundTotalPaisa,
+        inventoryDisposition: inventoryDisposition ?? this.inventoryDisposition,
+      );
+  ReturnClaimItem copyWithCompanion(ReturnClaimItemsCompanion data) {
+    return ReturnClaimItem(
+      id: data.id.present ? data.id.value : this.id,
+      claimId: data.claimId.present ? data.claimId.value : this.claimId,
+      partId: data.partId.present ? data.partId.value : this.partId,
+      quantity: data.quantity.present ? data.quantity.value : this.quantity,
+      refundRatePaisa: data.refundRatePaisa.present
+          ? data.refundRatePaisa.value
+          : this.refundRatePaisa,
+      lineRefundTotalPaisa: data.lineRefundTotalPaisa.present
+          ? data.lineRefundTotalPaisa.value
+          : this.lineRefundTotalPaisa,
+      inventoryDisposition: data.inventoryDisposition.present
+          ? data.inventoryDisposition.value
+          : this.inventoryDisposition,
+    );
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ReturnClaimItem(')
+          ..write('id: $id, ')
+          ..write('claimId: $claimId, ')
+          ..write('partId: $partId, ')
+          ..write('quantity: $quantity, ')
+          ..write('refundRatePaisa: $refundRatePaisa, ')
+          ..write('lineRefundTotalPaisa: $lineRefundTotalPaisa, ')
+          ..write('inventoryDisposition: $inventoryDisposition')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hash(id, claimId, partId, quantity,
+      refundRatePaisa, lineRefundTotalPaisa, inventoryDisposition);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is ReturnClaimItem &&
+          other.id == this.id &&
+          other.claimId == this.claimId &&
+          other.partId == this.partId &&
+          other.quantity == this.quantity &&
+          other.refundRatePaisa == this.refundRatePaisa &&
+          other.lineRefundTotalPaisa == this.lineRefundTotalPaisa &&
+          other.inventoryDisposition == this.inventoryDisposition);
+}
+
+class ReturnClaimItemsCompanion extends UpdateCompanion<ReturnClaimItem> {
+  final Value<int> id;
+  final Value<int> claimId;
+  final Value<int> partId;
+  final Value<int> quantity;
+  final Value<int> refundRatePaisa;
+  final Value<int> lineRefundTotalPaisa;
+  final Value<String> inventoryDisposition;
+  const ReturnClaimItemsCompanion({
+    this.id = const Value.absent(),
+    this.claimId = const Value.absent(),
+    this.partId = const Value.absent(),
+    this.quantity = const Value.absent(),
+    this.refundRatePaisa = const Value.absent(),
+    this.lineRefundTotalPaisa = const Value.absent(),
+    this.inventoryDisposition = const Value.absent(),
+  });
+  ReturnClaimItemsCompanion.insert({
+    this.id = const Value.absent(),
+    required int claimId,
+    required int partId,
+    required int quantity,
+    required int refundRatePaisa,
+    required int lineRefundTotalPaisa,
+    this.inventoryDisposition = const Value.absent(),
+  })  : claimId = Value(claimId),
+        partId = Value(partId),
+        quantity = Value(quantity),
+        refundRatePaisa = Value(refundRatePaisa),
+        lineRefundTotalPaisa = Value(lineRefundTotalPaisa);
+  static Insertable<ReturnClaimItem> custom({
+    Expression<int>? id,
+    Expression<int>? claimId,
+    Expression<int>? partId,
+    Expression<int>? quantity,
+    Expression<int>? refundRatePaisa,
+    Expression<int>? lineRefundTotalPaisa,
+    Expression<String>? inventoryDisposition,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (claimId != null) 'claim_id': claimId,
+      if (partId != null) 'part_id': partId,
+      if (quantity != null) 'quantity': quantity,
+      if (refundRatePaisa != null) 'refund_rate_paisa': refundRatePaisa,
+      if (lineRefundTotalPaisa != null)
+        'line_refund_total_paisa': lineRefundTotalPaisa,
+      if (inventoryDisposition != null)
+        'inventory_disposition': inventoryDisposition,
+    });
+  }
+
+  ReturnClaimItemsCompanion copyWith(
+      {Value<int>? id,
+      Value<int>? claimId,
+      Value<int>? partId,
+      Value<int>? quantity,
+      Value<int>? refundRatePaisa,
+      Value<int>? lineRefundTotalPaisa,
+      Value<String>? inventoryDisposition}) {
+    return ReturnClaimItemsCompanion(
+      id: id ?? this.id,
+      claimId: claimId ?? this.claimId,
+      partId: partId ?? this.partId,
+      quantity: quantity ?? this.quantity,
+      refundRatePaisa: refundRatePaisa ?? this.refundRatePaisa,
+      lineRefundTotalPaisa: lineRefundTotalPaisa ?? this.lineRefundTotalPaisa,
+      inventoryDisposition: inventoryDisposition ?? this.inventoryDisposition,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<int>(id.value);
+    }
+    if (claimId.present) {
+      map['claim_id'] = Variable<int>(claimId.value);
+    }
+    if (partId.present) {
+      map['part_id'] = Variable<int>(partId.value);
+    }
+    if (quantity.present) {
+      map['quantity'] = Variable<int>(quantity.value);
+    }
+    if (refundRatePaisa.present) {
+      map['refund_rate_paisa'] = Variable<int>(refundRatePaisa.value);
+    }
+    if (lineRefundTotalPaisa.present) {
+      map['line_refund_total_paisa'] =
+          Variable<int>(lineRefundTotalPaisa.value);
+    }
+    if (inventoryDisposition.present) {
+      map['inventory_disposition'] =
+          Variable<String>(inventoryDisposition.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('ReturnClaimItemsCompanion(')
+          ..write('id: $id, ')
+          ..write('claimId: $claimId, ')
+          ..write('partId: $partId, ')
+          ..write('quantity: $quantity, ')
+          ..write('refundRatePaisa: $refundRatePaisa, ')
+          ..write('lineRefundTotalPaisa: $lineRefundTotalPaisa, ')
+          ..write('inventoryDisposition: $inventoryDisposition')
           ..write(')'))
         .toString();
   }
@@ -5819,6 +7540,11 @@ abstract class _$AppDatabase extends GeneratedDatabase {
   late final $SalesTable sales = $SalesTable(this);
   late final $SaleItemsTable saleItems = $SaleItemsTable(this);
   late final $ExpensesTable expenses = $ExpensesTable(this);
+  late final $RoutesTable routes = $RoutesTable(this);
+  late final $EmployeesTable employees = $EmployeesTable(this);
+  late final $ReturnClaimsTable returnClaims = $ReturnClaimsTable(this);
+  late final $ReturnClaimItemsTable returnClaimItems =
+      $ReturnClaimItemsTable(this);
   late final $SuppliersTable suppliers = $SuppliersTable(this);
   late final $PurchasesTable purchases = $PurchasesTable(this);
   late final $PurchaseItemsTable purchaseItems = $PurchaseItemsTable(this);
@@ -5838,6 +7564,10 @@ abstract class _$AppDatabase extends GeneratedDatabase {
         sales,
         saleItems,
         expenses,
+        routes,
+        employees,
+        returnClaims,
+        returnClaimItems,
         suppliers,
         purchases,
         purchaseItems
@@ -7215,6 +8945,22 @@ final class $$PartsTableReferences
         manager.$state.copyWith(prefetchedData: cache));
   }
 
+  static MultiTypedResultKey<$ReturnClaimItemsTable, List<ReturnClaimItem>>
+      _returnClaimItemsRefsTable(_$AppDatabase db) =>
+          MultiTypedResultKey.fromTable(db.returnClaimItems,
+              aliasName: 'parts__id__return_claim_items__part_id');
+
+  $$ReturnClaimItemsTableProcessedTableManager get returnClaimItemsRefs {
+    final manager =
+        $$ReturnClaimItemsTableTableManager($_db, $_db.returnClaimItems)
+            .filter((f) => f.partId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache =
+        $_typedResult.readTableOrNull(_returnClaimItemsRefsTable($_db));
+    return ProcessedTableManager(
+        manager.$state.copyWith(prefetchedData: cache));
+  }
+
   static MultiTypedResultKey<$PurchaseItemsTable, List<PurchaseItem>>
       _purchaseItemsRefsTable(_$AppDatabase db) =>
           MultiTypedResultKey.fromTable(db.purchaseItems,
@@ -7334,6 +9080,27 @@ class $$PartsTableFilterComposer extends Composer<_$AppDatabase, $PartsTable> {
             $$SaleItemsTableFilterComposer(
               $db: $db,
               $table: $db.saleItems,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return f(composer);
+  }
+
+  Expression<bool> returnClaimItemsRefs(
+      Expression<bool> Function($$ReturnClaimItemsTableFilterComposer f) f) {
+    final $$ReturnClaimItemsTableFilterComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.id,
+        referencedTable: $db.returnClaimItems,
+        getReferencedColumn: (t) => t.partId,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$ReturnClaimItemsTableFilterComposer(
+              $db: $db,
+              $table: $db.returnClaimItems,
               $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
               joinBuilder: joinBuilder,
               $removeJoinBuilderFromRootComposer:
@@ -7550,6 +9317,27 @@ class $$PartsTableAnnotationComposer
     return f(composer);
   }
 
+  Expression<T> returnClaimItemsRefs<T extends Object>(
+      Expression<T> Function($$ReturnClaimItemsTableAnnotationComposer a) f) {
+    final $$ReturnClaimItemsTableAnnotationComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.id,
+        referencedTable: $db.returnClaimItems,
+        getReferencedColumn: (t) => t.partId,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$ReturnClaimItemsTableAnnotationComposer(
+              $db: $db,
+              $table: $db.returnClaimItems,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return f(composer);
+  }
+
   Expression<T> purchaseItemsRefs<T extends Object>(
       Expression<T> Function($$PurchaseItemsTableAnnotationComposer a) f) {
     final $$PurchaseItemsTableAnnotationComposer composer = $composerBuilder(
@@ -7587,6 +9375,7 @@ class $$PartsTableTableManager extends RootTableManager<
         {bool categoryId,
         bool stockMovementsRefs,
         bool saleItemsRefs,
+        bool returnClaimItemsRefs,
         bool purchaseItemsRefs})> {
   $$PartsTableTableManager(_$AppDatabase db, $PartsTable table)
       : super(TableManagerState(
@@ -7672,12 +9461,14 @@ class $$PartsTableTableManager extends RootTableManager<
               {categoryId = false,
               stockMovementsRefs = false,
               saleItemsRefs = false,
+              returnClaimItemsRefs = false,
               purchaseItemsRefs = false}) {
             return PrefetchHooks(
               db: db,
               explicitlyWatchedTables: [
                 if (stockMovementsRefs) db.stockMovements,
                 if (saleItemsRefs) db.saleItems,
+                if (returnClaimItemsRefs) db.returnClaimItems,
                 if (purchaseItemsRefs) db.purchaseItems
               ],
               addJoins: <
@@ -7731,6 +9522,19 @@ class $$PartsTableTableManager extends RootTableManager<
                                 referencedItems) =>
                             referencedItems.where((e) => e.partId == item.id),
                         typedResults: items),
+                  if (returnClaimItemsRefs)
+                    await $_getPrefetchedData<Part, $PartsTable,
+                            ReturnClaimItem>(
+                        currentTable: table,
+                        referencedTable: $$PartsTableReferences
+                            ._returnClaimItemsRefsTable(db),
+                        managerFromTypedResult: (p0) =>
+                            $$PartsTableReferences(db, table, p0)
+                                .returnClaimItemsRefs,
+                        referencedItemsForCurrentItem: (item,
+                                referencedItems) =>
+                            referencedItems.where((e) => e.partId == item.id),
+                        typedResults: items),
                   if (purchaseItemsRefs)
                     await $_getPrefetchedData<Part, $PartsTable, PurchaseItem>(
                         currentTable: table,
@@ -7765,6 +9569,7 @@ typedef $$PartsTableProcessedTableManager = ProcessedTableManager<
         {bool categoryId,
         bool stockMovementsRefs,
         bool saleItemsRefs,
+        bool returnClaimItemsRefs,
         bool purchaseItemsRefs})>;
 typedef $$StockMovementsTableCreateCompanionBuilder = StockMovementsCompanion
     Function({
@@ -8979,6 +10784,20 @@ final class $$SalesTableReferences
     return ProcessedTableManager(
         manager.$state.copyWith(prefetchedData: cache));
   }
+
+  static MultiTypedResultKey<$ReturnClaimsTable, List<ReturnClaim>>
+      _returnClaimsRefsTable(_$AppDatabase db) =>
+          MultiTypedResultKey.fromTable(db.returnClaims,
+              aliasName: 'sales__id__return_claims__sale_id');
+
+  $$ReturnClaimsTableProcessedTableManager get returnClaimsRefs {
+    final manager = $$ReturnClaimsTableTableManager($_db, $_db.returnClaims)
+        .filter((f) => f.saleId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_returnClaimsRefsTable($_db));
+    return ProcessedTableManager(
+        manager.$state.copyWith(prefetchedData: cache));
+  }
 }
 
 class $$SalesTableFilterComposer extends Composer<_$AppDatabase, $SalesTable> {
@@ -9077,6 +10896,27 @@ class $$SalesTableFilterComposer extends Composer<_$AppDatabase, $SalesTable> {
             $$SaleItemsTableFilterComposer(
               $db: $db,
               $table: $db.saleItems,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return f(composer);
+  }
+
+  Expression<bool> returnClaimsRefs(
+      Expression<bool> Function($$ReturnClaimsTableFilterComposer f) f) {
+    final $$ReturnClaimsTableFilterComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.id,
+        referencedTable: $db.returnClaims,
+        getReferencedColumn: (t) => t.saleId,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$ReturnClaimsTableFilterComposer(
+              $db: $db,
+              $table: $db.returnClaims,
               $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
               joinBuilder: joinBuilder,
               $removeJoinBuilderFromRootComposer:
@@ -9271,6 +11111,27 @@ class $$SalesTableAnnotationComposer
             ));
     return f(composer);
   }
+
+  Expression<T> returnClaimsRefs<T extends Object>(
+      Expression<T> Function($$ReturnClaimsTableAnnotationComposer a) f) {
+    final $$ReturnClaimsTableAnnotationComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.id,
+        referencedTable: $db.returnClaims,
+        getReferencedColumn: (t) => t.saleId,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$ReturnClaimsTableAnnotationComposer(
+              $db: $db,
+              $table: $db.returnClaims,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return f(composer);
+  }
 }
 
 class $$SalesTableTableManager extends RootTableManager<
@@ -9285,7 +11146,10 @@ class $$SalesTableTableManager extends RootTableManager<
     (Sale, $$SalesTableReferences),
     Sale,
     PrefetchHooks Function(
-        {bool customerId, bool createdBy, bool saleItemsRefs})> {
+        {bool customerId,
+        bool createdBy,
+        bool saleItemsRefs,
+        bool returnClaimsRefs})> {
   $$SalesTableTableManager(_$AppDatabase db, $SalesTable table)
       : super(TableManagerState(
           db: db,
@@ -9359,10 +11223,16 @@ class $$SalesTableTableManager extends RootTableManager<
                   ))
               .toList(),
           prefetchHooksCallback: (
-              {customerId = false, createdBy = false, saleItemsRefs = false}) {
+              {customerId = false,
+              createdBy = false,
+              saleItemsRefs = false,
+              returnClaimsRefs = false}) {
             return PrefetchHooks(
               db: db,
-              explicitlyWatchedTables: [if (saleItemsRefs) db.saleItems],
+              explicitlyWatchedTables: [
+                if (saleItemsRefs) db.saleItems,
+                if (returnClaimsRefs) db.returnClaims
+              ],
               addJoins: <
                   T extends TableManagerState<
                       dynamic,
@@ -9410,6 +11280,18 @@ class $$SalesTableTableManager extends RootTableManager<
                         referencedItemsForCurrentItem: (item,
                                 referencedItems) =>
                             referencedItems.where((e) => e.saleId == item.id),
+                        typedResults: items),
+                  if (returnClaimsRefs)
+                    await $_getPrefetchedData<Sale, $SalesTable, ReturnClaim>(
+                        currentTable: table,
+                        referencedTable:
+                            $$SalesTableReferences._returnClaimsRefsTable(db),
+                        managerFromTypedResult: (p0) =>
+                            $$SalesTableReferences(db, table, p0)
+                                .returnClaimsRefs,
+                        referencedItemsForCurrentItem: (item,
+                                referencedItems) =>
+                            referencedItems.where((e) => e.saleId == item.id),
                         typedResults: items)
                 ];
               },
@@ -9430,7 +11312,10 @@ typedef $$SalesTableProcessedTableManager = ProcessedTableManager<
     (Sale, $$SalesTableReferences),
     Sale,
     PrefetchHooks Function(
-        {bool customerId, bool createdBy, bool saleItemsRefs})>;
+        {bool customerId,
+        bool createdBy,
+        bool saleItemsRefs,
+        bool returnClaimsRefs})>;
 typedef $$SaleItemsTableCreateCompanionBuilder = SaleItemsCompanion Function({
   Value<int> id,
   required int saleId,
@@ -9794,16 +11679,20 @@ typedef $$ExpensesTableCreateCompanionBuilder = ExpensesCompanion Function({
   Value<int> id,
   required String category,
   required int amountPaisa,
-  Value<String?> notes,
+  Value<String> paymentMode,
+  Value<String?> description,
   required int recordedBy,
+  required DateTime expenseDate,
   Value<DateTime> createdAt,
 });
 typedef $$ExpensesTableUpdateCompanionBuilder = ExpensesCompanion Function({
   Value<int> id,
   Value<String> category,
   Value<int> amountPaisa,
-  Value<String?> notes,
+  Value<String> paymentMode,
+  Value<String?> description,
   Value<int> recordedBy,
+  Value<DateTime> expenseDate,
   Value<DateTime> createdAt,
 });
 
@@ -9844,8 +11733,14 @@ class $$ExpensesTableFilterComposer
   ColumnFilters<int> get amountPaisa => $composableBuilder(
       column: $table.amountPaisa, builder: (column) => ColumnFilters(column));
 
-  ColumnFilters<String> get notes => $composableBuilder(
-      column: $table.notes, builder: (column) => ColumnFilters(column));
+  ColumnFilters<String> get paymentMode => $composableBuilder(
+      column: $table.paymentMode, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get description => $composableBuilder(
+      column: $table.description, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get expenseDate => $composableBuilder(
+      column: $table.expenseDate, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnFilters(column));
@@ -9889,8 +11784,14 @@ class $$ExpensesTableOrderingComposer
   ColumnOrderings<int> get amountPaisa => $composableBuilder(
       column: $table.amountPaisa, builder: (column) => ColumnOrderings(column));
 
-  ColumnOrderings<String> get notes => $composableBuilder(
-      column: $table.notes, builder: (column) => ColumnOrderings(column));
+  ColumnOrderings<String> get paymentMode => $composableBuilder(
+      column: $table.paymentMode, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get description => $composableBuilder(
+      column: $table.description, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get expenseDate => $composableBuilder(
+      column: $table.expenseDate, builder: (column) => ColumnOrderings(column));
 
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnOrderings(column));
@@ -9934,8 +11835,14 @@ class $$ExpensesTableAnnotationComposer
   GeneratedColumn<int> get amountPaisa => $composableBuilder(
       column: $table.amountPaisa, builder: (column) => column);
 
-  GeneratedColumn<String> get notes =>
-      $composableBuilder(column: $table.notes, builder: (column) => column);
+  GeneratedColumn<String> get paymentMode => $composableBuilder(
+      column: $table.paymentMode, builder: (column) => column);
+
+  GeneratedColumn<String> get description => $composableBuilder(
+      column: $table.description, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get expenseDate => $composableBuilder(
+      column: $table.expenseDate, builder: (column) => column);
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -9987,32 +11894,40 @@ class $$ExpensesTableTableManager extends RootTableManager<
             Value<int> id = const Value.absent(),
             Value<String> category = const Value.absent(),
             Value<int> amountPaisa = const Value.absent(),
-            Value<String?> notes = const Value.absent(),
+            Value<String> paymentMode = const Value.absent(),
+            Value<String?> description = const Value.absent(),
             Value<int> recordedBy = const Value.absent(),
+            Value<DateTime> expenseDate = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
           }) =>
               ExpensesCompanion(
             id: id,
             category: category,
             amountPaisa: amountPaisa,
-            notes: notes,
+            paymentMode: paymentMode,
+            description: description,
             recordedBy: recordedBy,
+            expenseDate: expenseDate,
             createdAt: createdAt,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
             required String category,
             required int amountPaisa,
-            Value<String?> notes = const Value.absent(),
+            Value<String> paymentMode = const Value.absent(),
+            Value<String?> description = const Value.absent(),
             required int recordedBy,
+            required DateTime expenseDate,
             Value<DateTime> createdAt = const Value.absent(),
           }) =>
               ExpensesCompanion.insert(
             id: id,
             category: category,
             amountPaisa: amountPaisa,
-            notes: notes,
+            paymentMode: paymentMode,
+            description: description,
             recordedBy: recordedBy,
+            expenseDate: expenseDate,
             createdAt: createdAt,
           ),
           withReferenceMapper: (p0) => p0
@@ -10071,6 +11986,1513 @@ typedef $$ExpensesTableProcessedTableManager = ProcessedTableManager<
     (Expense, $$ExpensesTableReferences),
     Expense,
     PrefetchHooks Function({bool recordedBy})>;
+typedef $$RoutesTableCreateCompanionBuilder = RoutesCompanion Function({
+  Value<int> id,
+  required String name,
+  Value<String> city,
+  Value<String?> description,
+  Value<DateTime> createdAt,
+});
+typedef $$RoutesTableUpdateCompanionBuilder = RoutesCompanion Function({
+  Value<int> id,
+  Value<String> name,
+  Value<String> city,
+  Value<String?> description,
+  Value<DateTime> createdAt,
+});
+
+final class $$RoutesTableReferences
+    extends BaseReferences<_$AppDatabase, $RoutesTable, Route> {
+  $$RoutesTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static MultiTypedResultKey<$EmployeesTable, List<Employee>>
+      _employeesRefsTable(_$AppDatabase db) =>
+          MultiTypedResultKey.fromTable(db.employees,
+              aliasName: 'routes__id__employees__assigned_route_id');
+
+  $$EmployeesTableProcessedTableManager get employeesRefs {
+    final manager = $$EmployeesTableTableManager($_db, $_db.employees).filter(
+        (f) => f.assignedRouteId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache = $_typedResult.readTableOrNull(_employeesRefsTable($_db));
+    return ProcessedTableManager(
+        manager.$state.copyWith(prefetchedData: cache));
+  }
+}
+
+class $$RoutesTableFilterComposer
+    extends Composer<_$AppDatabase, $RoutesTable> {
+  $$RoutesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get name => $composableBuilder(
+      column: $table.name, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get city => $composableBuilder(
+      column: $table.city, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get description => $composableBuilder(
+      column: $table.description, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+
+  Expression<bool> employeesRefs(
+      Expression<bool> Function($$EmployeesTableFilterComposer f) f) {
+    final $$EmployeesTableFilterComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.id,
+        referencedTable: $db.employees,
+        getReferencedColumn: (t) => t.assignedRouteId,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$EmployeesTableFilterComposer(
+              $db: $db,
+              $table: $db.employees,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return f(composer);
+  }
+}
+
+class $$RoutesTableOrderingComposer
+    extends Composer<_$AppDatabase, $RoutesTable> {
+  $$RoutesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get name => $composableBuilder(
+      column: $table.name, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get city => $composableBuilder(
+      column: $table.city, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get description => $composableBuilder(
+      column: $table.description, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+}
+
+class $$RoutesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $RoutesTable> {
+  $$RoutesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get city =>
+      $composableBuilder(column: $table.city, builder: (column) => column);
+
+  GeneratedColumn<String> get description => $composableBuilder(
+      column: $table.description, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  Expression<T> employeesRefs<T extends Object>(
+      Expression<T> Function($$EmployeesTableAnnotationComposer a) f) {
+    final $$EmployeesTableAnnotationComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.id,
+        referencedTable: $db.employees,
+        getReferencedColumn: (t) => t.assignedRouteId,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$EmployeesTableAnnotationComposer(
+              $db: $db,
+              $table: $db.employees,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return f(composer);
+  }
+}
+
+class $$RoutesTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $RoutesTable,
+    Route,
+    $$RoutesTableFilterComposer,
+    $$RoutesTableOrderingComposer,
+    $$RoutesTableAnnotationComposer,
+    $$RoutesTableCreateCompanionBuilder,
+    $$RoutesTableUpdateCompanionBuilder,
+    (Route, $$RoutesTableReferences),
+    Route,
+    PrefetchHooks Function({bool employeesRefs})> {
+  $$RoutesTableTableManager(_$AppDatabase db, $RoutesTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$RoutesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$RoutesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$RoutesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<String> name = const Value.absent(),
+            Value<String> city = const Value.absent(),
+            Value<String?> description = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+          }) =>
+              RoutesCompanion(
+            id: id,
+            name: name,
+            city: city,
+            description: description,
+            createdAt: createdAt,
+          ),
+          createCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            required String name,
+            Value<String> city = const Value.absent(),
+            Value<String?> description = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+          }) =>
+              RoutesCompanion.insert(
+            id: id,
+            name: name,
+            city: city,
+            description: description,
+            createdAt: createdAt,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (
+                    e.readTable<$RoutesTable, Route>(table),
+                    $$RoutesTableReferences(db, table, e)
+                  ))
+              .toList(),
+          prefetchHooksCallback: ({employeesRefs = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [if (employeesRefs) db.employees],
+              addJoins: null,
+              getPrefetchedDataCallback: (items) async {
+                return [
+                  if (employeesRefs)
+                    await $_getPrefetchedData<Route, $RoutesTable, Employee>(
+                        currentTable: table,
+                        referencedTable:
+                            $$RoutesTableReferences._employeesRefsTable(db),
+                        managerFromTypedResult: (p0) =>
+                            $$RoutesTableReferences(db, table, p0)
+                                .employeesRefs,
+                        referencedItemsForCurrentItem:
+                            (item, referencedItems) => referencedItems
+                                .where((e) => e.assignedRouteId == item.id),
+                        typedResults: items)
+                ];
+              },
+            );
+          },
+        ));
+}
+
+typedef $$RoutesTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $RoutesTable,
+    Route,
+    $$RoutesTableFilterComposer,
+    $$RoutesTableOrderingComposer,
+    $$RoutesTableAnnotationComposer,
+    $$RoutesTableCreateCompanionBuilder,
+    $$RoutesTableUpdateCompanionBuilder,
+    (Route, $$RoutesTableReferences),
+    Route,
+    PrefetchHooks Function({bool employeesRefs})>;
+typedef $$EmployeesTableCreateCompanionBuilder = EmployeesCompanion Function({
+  Value<int> id,
+  required String name,
+  Value<String?> phone,
+  required String role,
+  Value<int?> assignedRouteId,
+  Value<int> monthlySalaryPaisa,
+  Value<bool> isActive,
+  Value<DateTime> createdAt,
+});
+typedef $$EmployeesTableUpdateCompanionBuilder = EmployeesCompanion Function({
+  Value<int> id,
+  Value<String> name,
+  Value<String?> phone,
+  Value<String> role,
+  Value<int?> assignedRouteId,
+  Value<int> monthlySalaryPaisa,
+  Value<bool> isActive,
+  Value<DateTime> createdAt,
+});
+
+final class $$EmployeesTableReferences
+    extends BaseReferences<_$AppDatabase, $EmployeesTable, Employee> {
+  $$EmployeesTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $RoutesTable _assignedRouteIdTable(_$AppDatabase db) =>
+      db.routes.createAlias('employees__assigned_route_id__routes__id');
+
+  $$RoutesTableProcessedTableManager? get assignedRouteId {
+    final $_column = $_itemColumn<int>('assigned_route_id');
+    if ($_column == null) return null;
+    final manager = $$RoutesTableTableManager($_db, $_db.routes)
+        .filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_assignedRouteIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+        manager.$state.copyWith(prefetchedData: [item]));
+  }
+}
+
+class $$EmployeesTableFilterComposer
+    extends Composer<_$AppDatabase, $EmployeesTable> {
+  $$EmployeesTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get name => $composableBuilder(
+      column: $table.name, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get phone => $composableBuilder(
+      column: $table.phone, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get role => $composableBuilder(
+      column: $table.role, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get monthlySalaryPaisa => $composableBuilder(
+      column: $table.monthlySalaryPaisa,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<bool> get isActive => $composableBuilder(
+      column: $table.isActive, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+
+  $$RoutesTableFilterComposer get assignedRouteId {
+    final $$RoutesTableFilterComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.assignedRouteId,
+        referencedTable: $db.routes,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$RoutesTableFilterComposer(
+              $db: $db,
+              $table: $db.routes,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return composer;
+  }
+}
+
+class $$EmployeesTableOrderingComposer
+    extends Composer<_$AppDatabase, $EmployeesTable> {
+  $$EmployeesTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get name => $composableBuilder(
+      column: $table.name, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get phone => $composableBuilder(
+      column: $table.phone, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get role => $composableBuilder(
+      column: $table.role, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get monthlySalaryPaisa => $composableBuilder(
+      column: $table.monthlySalaryPaisa,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<bool> get isActive => $composableBuilder(
+      column: $table.isActive, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+
+  $$RoutesTableOrderingComposer get assignedRouteId {
+    final $$RoutesTableOrderingComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.assignedRouteId,
+        referencedTable: $db.routes,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$RoutesTableOrderingComposer(
+              $db: $db,
+              $table: $db.routes,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return composer;
+  }
+}
+
+class $$EmployeesTableAnnotationComposer
+    extends Composer<_$AppDatabase, $EmployeesTable> {
+  $$EmployeesTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get name =>
+      $composableBuilder(column: $table.name, builder: (column) => column);
+
+  GeneratedColumn<String> get phone =>
+      $composableBuilder(column: $table.phone, builder: (column) => column);
+
+  GeneratedColumn<String> get role =>
+      $composableBuilder(column: $table.role, builder: (column) => column);
+
+  GeneratedColumn<int> get monthlySalaryPaisa => $composableBuilder(
+      column: $table.monthlySalaryPaisa, builder: (column) => column);
+
+  GeneratedColumn<bool> get isActive =>
+      $composableBuilder(column: $table.isActive, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  $$RoutesTableAnnotationComposer get assignedRouteId {
+    final $$RoutesTableAnnotationComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.assignedRouteId,
+        referencedTable: $db.routes,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$RoutesTableAnnotationComposer(
+              $db: $db,
+              $table: $db.routes,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return composer;
+  }
+}
+
+class $$EmployeesTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $EmployeesTable,
+    Employee,
+    $$EmployeesTableFilterComposer,
+    $$EmployeesTableOrderingComposer,
+    $$EmployeesTableAnnotationComposer,
+    $$EmployeesTableCreateCompanionBuilder,
+    $$EmployeesTableUpdateCompanionBuilder,
+    (Employee, $$EmployeesTableReferences),
+    Employee,
+    PrefetchHooks Function({bool assignedRouteId})> {
+  $$EmployeesTableTableManager(_$AppDatabase db, $EmployeesTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$EmployeesTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$EmployeesTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$EmployeesTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<String> name = const Value.absent(),
+            Value<String?> phone = const Value.absent(),
+            Value<String> role = const Value.absent(),
+            Value<int?> assignedRouteId = const Value.absent(),
+            Value<int> monthlySalaryPaisa = const Value.absent(),
+            Value<bool> isActive = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+          }) =>
+              EmployeesCompanion(
+            id: id,
+            name: name,
+            phone: phone,
+            role: role,
+            assignedRouteId: assignedRouteId,
+            monthlySalaryPaisa: monthlySalaryPaisa,
+            isActive: isActive,
+            createdAt: createdAt,
+          ),
+          createCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            required String name,
+            Value<String?> phone = const Value.absent(),
+            required String role,
+            Value<int?> assignedRouteId = const Value.absent(),
+            Value<int> monthlySalaryPaisa = const Value.absent(),
+            Value<bool> isActive = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+          }) =>
+              EmployeesCompanion.insert(
+            id: id,
+            name: name,
+            phone: phone,
+            role: role,
+            assignedRouteId: assignedRouteId,
+            monthlySalaryPaisa: monthlySalaryPaisa,
+            isActive: isActive,
+            createdAt: createdAt,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (
+                    e.readTable<$EmployeesTable, Employee>(table),
+                    $$EmployeesTableReferences(db, table, e)
+                  ))
+              .toList(),
+          prefetchHooksCallback: ({assignedRouteId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins: <
+                  T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic>>(state) {
+                if (assignedRouteId) {
+                  state = state.withJoin(
+                    currentTable: table,
+                    currentColumn: table.assignedRouteId,
+                    referencedTable:
+                        $$EmployeesTableReferences._assignedRouteIdTable(db),
+                    referencedColumn:
+                        $$EmployeesTableReferences._assignedRouteIdTable(db).id,
+                  ) as T;
+                }
+
+                return state;
+              },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ));
+}
+
+typedef $$EmployeesTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $EmployeesTable,
+    Employee,
+    $$EmployeesTableFilterComposer,
+    $$EmployeesTableOrderingComposer,
+    $$EmployeesTableAnnotationComposer,
+    $$EmployeesTableCreateCompanionBuilder,
+    $$EmployeesTableUpdateCompanionBuilder,
+    (Employee, $$EmployeesTableReferences),
+    Employee,
+    PrefetchHooks Function({bool assignedRouteId})>;
+typedef $$ReturnClaimsTableCreateCompanionBuilder = ReturnClaimsCompanion
+    Function({
+  Value<int> id,
+  required int saleId,
+  required int requestedBy,
+  Value<int?> approvedBy,
+  Value<String> claimStatus,
+  required int totalRefundAmountPaisa,
+  Value<String?> rejectionReason,
+  Value<DateTime> createdAt,
+  Value<DateTime> updatedAt,
+});
+typedef $$ReturnClaimsTableUpdateCompanionBuilder = ReturnClaimsCompanion
+    Function({
+  Value<int> id,
+  Value<int> saleId,
+  Value<int> requestedBy,
+  Value<int?> approvedBy,
+  Value<String> claimStatus,
+  Value<int> totalRefundAmountPaisa,
+  Value<String?> rejectionReason,
+  Value<DateTime> createdAt,
+  Value<DateTime> updatedAt,
+});
+
+final class $$ReturnClaimsTableReferences
+    extends BaseReferences<_$AppDatabase, $ReturnClaimsTable, ReturnClaim> {
+  $$ReturnClaimsTableReferences(super.$_db, super.$_table, super.$_typedResult);
+
+  static $SalesTable _saleIdTable(_$AppDatabase db) =>
+      db.sales.createAlias('return_claims__sale_id__sales__id');
+
+  $$SalesTableProcessedTableManager get saleId {
+    final $_column = $_itemColumn<int>('sale_id')!;
+
+    final manager = $$SalesTableTableManager($_db, $_db.sales)
+        .filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_saleIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+        manager.$state.copyWith(prefetchedData: [item]));
+  }
+
+  static $UsersTable _requestedByTable(_$AppDatabase db) =>
+      db.users.createAlias('return_claims__requested_by__users__id');
+
+  $$UsersTableProcessedTableManager get requestedBy {
+    final $_column = $_itemColumn<int>('requested_by')!;
+
+    final manager = $$UsersTableTableManager($_db, $_db.users)
+        .filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_requestedByTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+        manager.$state.copyWith(prefetchedData: [item]));
+  }
+
+  static $UsersTable _approvedByTable(_$AppDatabase db) =>
+      db.users.createAlias('return_claims__approved_by__users__id');
+
+  $$UsersTableProcessedTableManager? get approvedBy {
+    final $_column = $_itemColumn<int>('approved_by');
+    if ($_column == null) return null;
+    final manager = $$UsersTableTableManager($_db, $_db.users)
+        .filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_approvedByTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+        manager.$state.copyWith(prefetchedData: [item]));
+  }
+
+  static MultiTypedResultKey<$ReturnClaimItemsTable, List<ReturnClaimItem>>
+      _returnClaimItemsRefsTable(_$AppDatabase db) =>
+          MultiTypedResultKey.fromTable(db.returnClaimItems,
+              aliasName: 'return_claims__id__return_claim_items__claim_id');
+
+  $$ReturnClaimItemsTableProcessedTableManager get returnClaimItemsRefs {
+    final manager =
+        $$ReturnClaimItemsTableTableManager($_db, $_db.returnClaimItems)
+            .filter((f) => f.claimId.id.sqlEquals($_itemColumn<int>('id')!));
+
+    final cache =
+        $_typedResult.readTableOrNull(_returnClaimItemsRefsTable($_db));
+    return ProcessedTableManager(
+        manager.$state.copyWith(prefetchedData: cache));
+  }
+}
+
+class $$ReturnClaimsTableFilterComposer
+    extends Composer<_$AppDatabase, $ReturnClaimsTable> {
+  $$ReturnClaimsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get claimStatus => $composableBuilder(
+      column: $table.claimStatus, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get totalRefundAmountPaisa => $composableBuilder(
+      column: $table.totalRefundAmountPaisa,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get rejectionReason => $composableBuilder(
+      column: $table.rejectionReason,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnFilters(column));
+
+  $$SalesTableFilterComposer get saleId {
+    final $$SalesTableFilterComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.saleId,
+        referencedTable: $db.sales,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$SalesTableFilterComposer(
+              $db: $db,
+              $table: $db.sales,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return composer;
+  }
+
+  $$UsersTableFilterComposer get requestedBy {
+    final $$UsersTableFilterComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.requestedBy,
+        referencedTable: $db.users,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$UsersTableFilterComposer(
+              $db: $db,
+              $table: $db.users,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return composer;
+  }
+
+  $$UsersTableFilterComposer get approvedBy {
+    final $$UsersTableFilterComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.approvedBy,
+        referencedTable: $db.users,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$UsersTableFilterComposer(
+              $db: $db,
+              $table: $db.users,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return composer;
+  }
+
+  Expression<bool> returnClaimItemsRefs(
+      Expression<bool> Function($$ReturnClaimItemsTableFilterComposer f) f) {
+    final $$ReturnClaimItemsTableFilterComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.id,
+        referencedTable: $db.returnClaimItems,
+        getReferencedColumn: (t) => t.claimId,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$ReturnClaimItemsTableFilterComposer(
+              $db: $db,
+              $table: $db.returnClaimItems,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return f(composer);
+  }
+}
+
+class $$ReturnClaimsTableOrderingComposer
+    extends Composer<_$AppDatabase, $ReturnClaimsTable> {
+  $$ReturnClaimsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get claimStatus => $composableBuilder(
+      column: $table.claimStatus, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get totalRefundAmountPaisa => $composableBuilder(
+      column: $table.totalRefundAmountPaisa,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get rejectionReason => $composableBuilder(
+      column: $table.rejectionReason,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get createdAt => $composableBuilder(
+      column: $table.createdAt, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<DateTime> get updatedAt => $composableBuilder(
+      column: $table.updatedAt, builder: (column) => ColumnOrderings(column));
+
+  $$SalesTableOrderingComposer get saleId {
+    final $$SalesTableOrderingComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.saleId,
+        referencedTable: $db.sales,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$SalesTableOrderingComposer(
+              $db: $db,
+              $table: $db.sales,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return composer;
+  }
+
+  $$UsersTableOrderingComposer get requestedBy {
+    final $$UsersTableOrderingComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.requestedBy,
+        referencedTable: $db.users,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$UsersTableOrderingComposer(
+              $db: $db,
+              $table: $db.users,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return composer;
+  }
+
+  $$UsersTableOrderingComposer get approvedBy {
+    final $$UsersTableOrderingComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.approvedBy,
+        referencedTable: $db.users,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$UsersTableOrderingComposer(
+              $db: $db,
+              $table: $db.users,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return composer;
+  }
+}
+
+class $$ReturnClaimsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ReturnClaimsTable> {
+  $$ReturnClaimsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get claimStatus => $composableBuilder(
+      column: $table.claimStatus, builder: (column) => column);
+
+  GeneratedColumn<int> get totalRefundAmountPaisa => $composableBuilder(
+      column: $table.totalRefundAmountPaisa, builder: (column) => column);
+
+  GeneratedColumn<String> get rejectionReason => $composableBuilder(
+      column: $table.rejectionReason, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get createdAt =>
+      $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<DateTime> get updatedAt =>
+      $composableBuilder(column: $table.updatedAt, builder: (column) => column);
+
+  $$SalesTableAnnotationComposer get saleId {
+    final $$SalesTableAnnotationComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.saleId,
+        referencedTable: $db.sales,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$SalesTableAnnotationComposer(
+              $db: $db,
+              $table: $db.sales,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return composer;
+  }
+
+  $$UsersTableAnnotationComposer get requestedBy {
+    final $$UsersTableAnnotationComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.requestedBy,
+        referencedTable: $db.users,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$UsersTableAnnotationComposer(
+              $db: $db,
+              $table: $db.users,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return composer;
+  }
+
+  $$UsersTableAnnotationComposer get approvedBy {
+    final $$UsersTableAnnotationComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.approvedBy,
+        referencedTable: $db.users,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$UsersTableAnnotationComposer(
+              $db: $db,
+              $table: $db.users,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return composer;
+  }
+
+  Expression<T> returnClaimItemsRefs<T extends Object>(
+      Expression<T> Function($$ReturnClaimItemsTableAnnotationComposer a) f) {
+    final $$ReturnClaimItemsTableAnnotationComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.id,
+        referencedTable: $db.returnClaimItems,
+        getReferencedColumn: (t) => t.claimId,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$ReturnClaimItemsTableAnnotationComposer(
+              $db: $db,
+              $table: $db.returnClaimItems,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return f(composer);
+  }
+}
+
+class $$ReturnClaimsTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $ReturnClaimsTable,
+    ReturnClaim,
+    $$ReturnClaimsTableFilterComposer,
+    $$ReturnClaimsTableOrderingComposer,
+    $$ReturnClaimsTableAnnotationComposer,
+    $$ReturnClaimsTableCreateCompanionBuilder,
+    $$ReturnClaimsTableUpdateCompanionBuilder,
+    (ReturnClaim, $$ReturnClaimsTableReferences),
+    ReturnClaim,
+    PrefetchHooks Function(
+        {bool saleId,
+        bool requestedBy,
+        bool approvedBy,
+        bool returnClaimItemsRefs})> {
+  $$ReturnClaimsTableTableManager(_$AppDatabase db, $ReturnClaimsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ReturnClaimsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ReturnClaimsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ReturnClaimsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<int> saleId = const Value.absent(),
+            Value<int> requestedBy = const Value.absent(),
+            Value<int?> approvedBy = const Value.absent(),
+            Value<String> claimStatus = const Value.absent(),
+            Value<int> totalRefundAmountPaisa = const Value.absent(),
+            Value<String?> rejectionReason = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+            Value<DateTime> updatedAt = const Value.absent(),
+          }) =>
+              ReturnClaimsCompanion(
+            id: id,
+            saleId: saleId,
+            requestedBy: requestedBy,
+            approvedBy: approvedBy,
+            claimStatus: claimStatus,
+            totalRefundAmountPaisa: totalRefundAmountPaisa,
+            rejectionReason: rejectionReason,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+          ),
+          createCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            required int saleId,
+            required int requestedBy,
+            Value<int?> approvedBy = const Value.absent(),
+            Value<String> claimStatus = const Value.absent(),
+            required int totalRefundAmountPaisa,
+            Value<String?> rejectionReason = const Value.absent(),
+            Value<DateTime> createdAt = const Value.absent(),
+            Value<DateTime> updatedAt = const Value.absent(),
+          }) =>
+              ReturnClaimsCompanion.insert(
+            id: id,
+            saleId: saleId,
+            requestedBy: requestedBy,
+            approvedBy: approvedBy,
+            claimStatus: claimStatus,
+            totalRefundAmountPaisa: totalRefundAmountPaisa,
+            rejectionReason: rejectionReason,
+            createdAt: createdAt,
+            updatedAt: updatedAt,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (
+                    e.readTable<$ReturnClaimsTable, ReturnClaim>(table),
+                    $$ReturnClaimsTableReferences(db, table, e)
+                  ))
+              .toList(),
+          prefetchHooksCallback: (
+              {saleId = false,
+              requestedBy = false,
+              approvedBy = false,
+              returnClaimItemsRefs = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [
+                if (returnClaimItemsRefs) db.returnClaimItems
+              ],
+              addJoins: <
+                  T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic>>(state) {
+                if (saleId) {
+                  state = state.withJoin(
+                    currentTable: table,
+                    currentColumn: table.saleId,
+                    referencedTable:
+                        $$ReturnClaimsTableReferences._saleIdTable(db),
+                    referencedColumn:
+                        $$ReturnClaimsTableReferences._saleIdTable(db).id,
+                  ) as T;
+                }
+                if (requestedBy) {
+                  state = state.withJoin(
+                    currentTable: table,
+                    currentColumn: table.requestedBy,
+                    referencedTable:
+                        $$ReturnClaimsTableReferences._requestedByTable(db),
+                    referencedColumn:
+                        $$ReturnClaimsTableReferences._requestedByTable(db).id,
+                  ) as T;
+                }
+                if (approvedBy) {
+                  state = state.withJoin(
+                    currentTable: table,
+                    currentColumn: table.approvedBy,
+                    referencedTable:
+                        $$ReturnClaimsTableReferences._approvedByTable(db),
+                    referencedColumn:
+                        $$ReturnClaimsTableReferences._approvedByTable(db).id,
+                  ) as T;
+                }
+
+                return state;
+              },
+              getPrefetchedDataCallback: (items) async {
+                return [
+                  if (returnClaimItemsRefs)
+                    await $_getPrefetchedData<ReturnClaim, $ReturnClaimsTable,
+                            ReturnClaimItem>(
+                        currentTable: table,
+                        referencedTable: $$ReturnClaimsTableReferences
+                            ._returnClaimItemsRefsTable(db),
+                        managerFromTypedResult: (p0) =>
+                            $$ReturnClaimsTableReferences(db, table, p0)
+                                .returnClaimItemsRefs,
+                        referencedItemsForCurrentItem: (item,
+                                referencedItems) =>
+                            referencedItems.where((e) => e.claimId == item.id),
+                        typedResults: items)
+                ];
+              },
+            );
+          },
+        ));
+}
+
+typedef $$ReturnClaimsTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $ReturnClaimsTable,
+    ReturnClaim,
+    $$ReturnClaimsTableFilterComposer,
+    $$ReturnClaimsTableOrderingComposer,
+    $$ReturnClaimsTableAnnotationComposer,
+    $$ReturnClaimsTableCreateCompanionBuilder,
+    $$ReturnClaimsTableUpdateCompanionBuilder,
+    (ReturnClaim, $$ReturnClaimsTableReferences),
+    ReturnClaim,
+    PrefetchHooks Function(
+        {bool saleId,
+        bool requestedBy,
+        bool approvedBy,
+        bool returnClaimItemsRefs})>;
+typedef $$ReturnClaimItemsTableCreateCompanionBuilder
+    = ReturnClaimItemsCompanion Function({
+  Value<int> id,
+  required int claimId,
+  required int partId,
+  required int quantity,
+  required int refundRatePaisa,
+  required int lineRefundTotalPaisa,
+  Value<String> inventoryDisposition,
+});
+typedef $$ReturnClaimItemsTableUpdateCompanionBuilder
+    = ReturnClaimItemsCompanion Function({
+  Value<int> id,
+  Value<int> claimId,
+  Value<int> partId,
+  Value<int> quantity,
+  Value<int> refundRatePaisa,
+  Value<int> lineRefundTotalPaisa,
+  Value<String> inventoryDisposition,
+});
+
+final class $$ReturnClaimItemsTableReferences extends BaseReferences<
+    _$AppDatabase, $ReturnClaimItemsTable, ReturnClaimItem> {
+  $$ReturnClaimItemsTableReferences(
+      super.$_db, super.$_table, super.$_typedResult);
+
+  static $ReturnClaimsTable _claimIdTable(_$AppDatabase db) => db.returnClaims
+      .createAlias('return_claim_items__claim_id__return_claims__id');
+
+  $$ReturnClaimsTableProcessedTableManager get claimId {
+    final $_column = $_itemColumn<int>('claim_id')!;
+
+    final manager = $$ReturnClaimsTableTableManager($_db, $_db.returnClaims)
+        .filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_claimIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+        manager.$state.copyWith(prefetchedData: [item]));
+  }
+
+  static $PartsTable _partIdTable(_$AppDatabase db) =>
+      db.parts.createAlias('return_claim_items__part_id__parts__id');
+
+  $$PartsTableProcessedTableManager get partId {
+    final $_column = $_itemColumn<int>('part_id')!;
+
+    final manager = $$PartsTableTableManager($_db, $_db.parts)
+        .filter((f) => f.id.sqlEquals($_column));
+    final item = $_typedResult.readTableOrNull(_partIdTable($_db));
+    if (item == null) return manager;
+    return ProcessedTableManager(
+        manager.$state.copyWith(prefetchedData: [item]));
+  }
+}
+
+class $$ReturnClaimItemsTableFilterComposer
+    extends Composer<_$AppDatabase, $ReturnClaimItemsTable> {
+  $$ReturnClaimItemsTableFilterComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnFilters<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get quantity => $composableBuilder(
+      column: $table.quantity, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get refundRatePaisa => $composableBuilder(
+      column: $table.refundRatePaisa,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get lineRefundTotalPaisa => $composableBuilder(
+      column: $table.lineRefundTotalPaisa,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get inventoryDisposition => $composableBuilder(
+      column: $table.inventoryDisposition,
+      builder: (column) => ColumnFilters(column));
+
+  $$ReturnClaimsTableFilterComposer get claimId {
+    final $$ReturnClaimsTableFilterComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.claimId,
+        referencedTable: $db.returnClaims,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$ReturnClaimsTableFilterComposer(
+              $db: $db,
+              $table: $db.returnClaims,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return composer;
+  }
+
+  $$PartsTableFilterComposer get partId {
+    final $$PartsTableFilterComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.partId,
+        referencedTable: $db.parts,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$PartsTableFilterComposer(
+              $db: $db,
+              $table: $db.parts,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return composer;
+  }
+}
+
+class $$ReturnClaimItemsTableOrderingComposer
+    extends Composer<_$AppDatabase, $ReturnClaimItemsTable> {
+  $$ReturnClaimItemsTableOrderingComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  ColumnOrderings<int> get id => $composableBuilder(
+      column: $table.id, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get quantity => $composableBuilder(
+      column: $table.quantity, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get refundRatePaisa => $composableBuilder(
+      column: $table.refundRatePaisa,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get lineRefundTotalPaisa => $composableBuilder(
+      column: $table.lineRefundTotalPaisa,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get inventoryDisposition => $composableBuilder(
+      column: $table.inventoryDisposition,
+      builder: (column) => ColumnOrderings(column));
+
+  $$ReturnClaimsTableOrderingComposer get claimId {
+    final $$ReturnClaimsTableOrderingComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.claimId,
+        referencedTable: $db.returnClaims,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$ReturnClaimsTableOrderingComposer(
+              $db: $db,
+              $table: $db.returnClaims,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return composer;
+  }
+
+  $$PartsTableOrderingComposer get partId {
+    final $$PartsTableOrderingComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.partId,
+        referencedTable: $db.parts,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$PartsTableOrderingComposer(
+              $db: $db,
+              $table: $db.parts,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return composer;
+  }
+}
+
+class $$ReturnClaimItemsTableAnnotationComposer
+    extends Composer<_$AppDatabase, $ReturnClaimItemsTable> {
+  $$ReturnClaimItemsTableAnnotationComposer({
+    required super.$db,
+    required super.$table,
+    super.joinBuilder,
+    super.$addJoinBuilderToRootComposer,
+    super.$removeJoinBuilderFromRootComposer,
+  });
+  GeneratedColumn<int> get id =>
+      $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<int> get quantity =>
+      $composableBuilder(column: $table.quantity, builder: (column) => column);
+
+  GeneratedColumn<int> get refundRatePaisa => $composableBuilder(
+      column: $table.refundRatePaisa, builder: (column) => column);
+
+  GeneratedColumn<int> get lineRefundTotalPaisa => $composableBuilder(
+      column: $table.lineRefundTotalPaisa, builder: (column) => column);
+
+  GeneratedColumn<String> get inventoryDisposition => $composableBuilder(
+      column: $table.inventoryDisposition, builder: (column) => column);
+
+  $$ReturnClaimsTableAnnotationComposer get claimId {
+    final $$ReturnClaimsTableAnnotationComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.claimId,
+        referencedTable: $db.returnClaims,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$ReturnClaimsTableAnnotationComposer(
+              $db: $db,
+              $table: $db.returnClaims,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return composer;
+  }
+
+  $$PartsTableAnnotationComposer get partId {
+    final $$PartsTableAnnotationComposer composer = $composerBuilder(
+        composer: this,
+        getCurrentColumn: (t) => t.partId,
+        referencedTable: $db.parts,
+        getReferencedColumn: (t) => t.id,
+        builder: (joinBuilder,
+                {$addJoinBuilderToRootComposer,
+                $removeJoinBuilderFromRootComposer}) =>
+            $$PartsTableAnnotationComposer(
+              $db: $db,
+              $table: $db.parts,
+              $addJoinBuilderToRootComposer: $addJoinBuilderToRootComposer,
+              joinBuilder: joinBuilder,
+              $removeJoinBuilderFromRootComposer:
+                  $removeJoinBuilderFromRootComposer,
+            ));
+    return composer;
+  }
+}
+
+class $$ReturnClaimItemsTableTableManager extends RootTableManager<
+    _$AppDatabase,
+    $ReturnClaimItemsTable,
+    ReturnClaimItem,
+    $$ReturnClaimItemsTableFilterComposer,
+    $$ReturnClaimItemsTableOrderingComposer,
+    $$ReturnClaimItemsTableAnnotationComposer,
+    $$ReturnClaimItemsTableCreateCompanionBuilder,
+    $$ReturnClaimItemsTableUpdateCompanionBuilder,
+    (ReturnClaimItem, $$ReturnClaimItemsTableReferences),
+    ReturnClaimItem,
+    PrefetchHooks Function({bool claimId, bool partId})> {
+  $$ReturnClaimItemsTableTableManager(
+      _$AppDatabase db, $ReturnClaimItemsTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          createFilteringComposer: () =>
+              $$ReturnClaimItemsTableFilterComposer($db: db, $table: table),
+          createOrderingComposer: () =>
+              $$ReturnClaimItemsTableOrderingComposer($db: db, $table: table),
+          createComputedFieldComposer: () =>
+              $$ReturnClaimItemsTableAnnotationComposer($db: db, $table: table),
+          updateCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            Value<int> claimId = const Value.absent(),
+            Value<int> partId = const Value.absent(),
+            Value<int> quantity = const Value.absent(),
+            Value<int> refundRatePaisa = const Value.absent(),
+            Value<int> lineRefundTotalPaisa = const Value.absent(),
+            Value<String> inventoryDisposition = const Value.absent(),
+          }) =>
+              ReturnClaimItemsCompanion(
+            id: id,
+            claimId: claimId,
+            partId: partId,
+            quantity: quantity,
+            refundRatePaisa: refundRatePaisa,
+            lineRefundTotalPaisa: lineRefundTotalPaisa,
+            inventoryDisposition: inventoryDisposition,
+          ),
+          createCompanionCallback: ({
+            Value<int> id = const Value.absent(),
+            required int claimId,
+            required int partId,
+            required int quantity,
+            required int refundRatePaisa,
+            required int lineRefundTotalPaisa,
+            Value<String> inventoryDisposition = const Value.absent(),
+          }) =>
+              ReturnClaimItemsCompanion.insert(
+            id: id,
+            claimId: claimId,
+            partId: partId,
+            quantity: quantity,
+            refundRatePaisa: refundRatePaisa,
+            lineRefundTotalPaisa: lineRefundTotalPaisa,
+            inventoryDisposition: inventoryDisposition,
+          ),
+          withReferenceMapper: (p0) => p0
+              .map((e) => (
+                    e.readTable<$ReturnClaimItemsTable, ReturnClaimItem>(table),
+                    $$ReturnClaimItemsTableReferences(db, table, e)
+                  ))
+              .toList(),
+          prefetchHooksCallback: ({claimId = false, partId = false}) {
+            return PrefetchHooks(
+              db: db,
+              explicitlyWatchedTables: [],
+              addJoins: <
+                  T extends TableManagerState<
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic,
+                      dynamic>>(state) {
+                if (claimId) {
+                  state = state.withJoin(
+                    currentTable: table,
+                    currentColumn: table.claimId,
+                    referencedTable:
+                        $$ReturnClaimItemsTableReferences._claimIdTable(db),
+                    referencedColumn:
+                        $$ReturnClaimItemsTableReferences._claimIdTable(db).id,
+                  ) as T;
+                }
+                if (partId) {
+                  state = state.withJoin(
+                    currentTable: table,
+                    currentColumn: table.partId,
+                    referencedTable:
+                        $$ReturnClaimItemsTableReferences._partIdTable(db),
+                    referencedColumn:
+                        $$ReturnClaimItemsTableReferences._partIdTable(db).id,
+                  ) as T;
+                }
+
+                return state;
+              },
+              getPrefetchedDataCallback: (items) async {
+                return [];
+              },
+            );
+          },
+        ));
+}
+
+typedef $$ReturnClaimItemsTableProcessedTableManager = ProcessedTableManager<
+    _$AppDatabase,
+    $ReturnClaimItemsTable,
+    ReturnClaimItem,
+    $$ReturnClaimItemsTableFilterComposer,
+    $$ReturnClaimItemsTableOrderingComposer,
+    $$ReturnClaimItemsTableAnnotationComposer,
+    $$ReturnClaimItemsTableCreateCompanionBuilder,
+    $$ReturnClaimItemsTableUpdateCompanionBuilder,
+    (ReturnClaimItem, $$ReturnClaimItemsTableReferences),
+    ReturnClaimItem,
+    PrefetchHooks Function({bool claimId, bool partId})>;
 typedef $$SuppliersTableCreateCompanionBuilder = SuppliersCompanion Function({
   Value<int> id,
   required String name,
@@ -11126,6 +14548,14 @@ class $AppDatabaseManager {
       $$SaleItemsTableTableManager(_db, _db.saleItems);
   $$ExpensesTableTableManager get expenses =>
       $$ExpensesTableTableManager(_db, _db.expenses);
+  $$RoutesTableTableManager get routes =>
+      $$RoutesTableTableManager(_db, _db.routes);
+  $$EmployeesTableTableManager get employees =>
+      $$EmployeesTableTableManager(_db, _db.employees);
+  $$ReturnClaimsTableTableManager get returnClaims =>
+      $$ReturnClaimsTableTableManager(_db, _db.returnClaims);
+  $$ReturnClaimItemsTableTableManager get returnClaimItems =>
+      $$ReturnClaimItemsTableTableManager(_db, _db.returnClaimItems);
   $$SuppliersTableTableManager get suppliers =>
       $$SuppliersTableTableManager(_db, _db.suppliers);
   $$PurchasesTableTableManager get purchases =>

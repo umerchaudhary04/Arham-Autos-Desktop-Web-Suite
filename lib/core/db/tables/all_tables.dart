@@ -97,13 +97,56 @@ class SaleItems extends Table {
   IntColumn get lineTotalPaisa => integer()();
 }
 
+class Routes extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  TextColumn get name => text()();
+  TextColumn get city => text().withDefault(const Constant('Kot Samba'))();
+  TextColumn get description => text().nullable()();
+  DateTimeColumn get createdAt => dateTime().clientDefault(() => DateTime.now())();
+}
+
+class Employees extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  TextColumn get name => text()();
+  TextColumn get phone => text().nullable()();
+  TextColumn get role => text()(); // SALESMAN, CASHIER, SHOP_BOY
+  IntColumn get assignedRouteId => integer().nullable().references(Routes, #id)();
+  IntColumn get monthlySalaryPaisa => integer().withDefault(const Constant(0))();
+  BoolColumn get isActive => boolean().withDefault(const Constant(true))();
+  DateTimeColumn get createdAt => dateTime().clientDefault(() => DateTime.now())();
+}
+
 class Expenses extends Table {
   IntColumn get id => integer().autoIncrement()();
-  TextColumn get category => text()();
+  TextColumn get category => text()(); // RENT, ELECTRICITY, TEA_MEALS, FUEL, MAINTENANCE, MISC
   IntColumn get amountPaisa => integer()();
-  TextColumn get notes => text().nullable()();
+  TextColumn get paymentMode => text().withDefault(const Constant('CASH'))();
+  TextColumn get description => text().nullable()();
   IntColumn get recordedBy => integer().references(Users, #id)();
+  DateTimeColumn get expenseDate => dateTime()();
   DateTimeColumn get createdAt => dateTime().clientDefault(() => DateTime.now())();
+}
+
+class ReturnClaims extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get saleId => integer().references(Sales, #id)();
+  IntColumn get requestedBy => integer().references(Users, #id)();
+  IntColumn get approvedBy => integer().nullable().references(Users, #id)();
+  TextColumn get claimStatus => text().withDefault(const Constant('PENDING'))(); // PENDING, APPROVED, REJECTED
+  IntColumn get totalRefundAmountPaisa => integer()();
+  TextColumn get rejectionReason => text().nullable()();
+  DateTimeColumn get createdAt => dateTime().clientDefault(() => DateTime.now())();
+  DateTimeColumn get updatedAt => dateTime().clientDefault(() => DateTime.now())();
+}
+
+class ReturnClaimItems extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get claimId => integer().references(ReturnClaims, #id)();
+  IntColumn get partId => integer().references(Parts, #id)();
+  IntColumn get quantity => integer()();
+  IntColumn get refundRatePaisa => integer()();
+  IntColumn get lineRefundTotalPaisa => integer()();
+  TextColumn get inventoryDisposition => text().withDefault(const Constant('SELLABLE'))(); // SELLABLE, DEFECTIVE_CLAIM
 }
 
 class Suppliers extends Table {
