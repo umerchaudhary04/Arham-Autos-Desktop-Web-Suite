@@ -2620,11 +2620,31 @@ class $CustomersTable extends Customers
   late final GeneratedColumn<String> name = GeneratedColumn<String>(
       'name', aliasedName, false,
       type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _shopNameMeta =
+      const VerificationMeta('shopName');
+  @override
+  late final GeneratedColumn<String> shopName = GeneratedColumn<String>(
+      'shop_name', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   static const VerificationMeta _phoneMeta = const VerificationMeta('phone');
   @override
   late final GeneratedColumn<String> phone = GeneratedColumn<String>(
       'phone', aliasedName, true,
       type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _addressMeta =
+      const VerificationMeta('address');
+  @override
+  late final GeneratedColumn<String> address = GeneratedColumn<String>(
+      'address', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _customerTypeMeta =
+      const VerificationMeta('customerType');
+  @override
+  late final GeneratedColumn<String> customerType = GeneratedColumn<String>(
+      'customer_type', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant('RETAIL'));
   static const VerificationMeta _creditLimitPaisaMeta =
       const VerificationMeta('creditLimitPaisa');
   @override
@@ -2640,8 +2660,16 @@ class $CustomersTable extends Customers
       requiredDuringInsert: false,
       defaultValue: const Constant(0));
   @override
-  List<GeneratedColumn> get $columns =>
-      [id, name, phone, creditLimitPaisa, currentBalancePaisa];
+  List<GeneratedColumn> get $columns => [
+        id,
+        name,
+        shopName,
+        phone,
+        address,
+        customerType,
+        creditLimitPaisa,
+        currentBalancePaisa
+      ];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -2661,9 +2689,23 @@ class $CustomersTable extends Customers
     } else if (isInserting) {
       context.missing(_nameMeta);
     }
+    if (data.containsKey('shop_name')) {
+      context.handle(_shopNameMeta,
+          shopName.isAcceptableOrUnknown(data['shop_name']!, _shopNameMeta));
+    }
     if (data.containsKey('phone')) {
       context.handle(
           _phoneMeta, phone.isAcceptableOrUnknown(data['phone']!, _phoneMeta));
+    }
+    if (data.containsKey('address')) {
+      context.handle(_addressMeta,
+          address.isAcceptableOrUnknown(data['address']!, _addressMeta));
+    }
+    if (data.containsKey('customer_type')) {
+      context.handle(
+          _customerTypeMeta,
+          customerType.isAcceptableOrUnknown(
+              data['customer_type']!, _customerTypeMeta));
     }
     if (data.containsKey('credit_limit_paisa')) {
       context.handle(
@@ -2690,8 +2732,14 @@ class $CustomersTable extends Customers
           .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
       name: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}name'])!,
+      shopName: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}shop_name']),
       phone: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}phone']),
+      address: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}address']),
+      customerType: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}customer_type'])!,
       creditLimitPaisa: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}credit_limit_paisa']),
       currentBalancePaisa: attachedDatabase.typeMapping.read(
@@ -2708,13 +2756,19 @@ class $CustomersTable extends Customers
 class Customer extends DataClass implements Insertable<Customer> {
   final int id;
   final String name;
+  final String? shopName;
   final String? phone;
+  final String? address;
+  final String customerType;
   final int? creditLimitPaisa;
   final int currentBalancePaisa;
   const Customer(
       {required this.id,
       required this.name,
+      this.shopName,
       this.phone,
+      this.address,
+      required this.customerType,
       this.creditLimitPaisa,
       required this.currentBalancePaisa});
   @override
@@ -2722,9 +2776,16 @@ class Customer extends DataClass implements Insertable<Customer> {
     final map = <String, Expression>{};
     map['id'] = Variable<int>(id);
     map['name'] = Variable<String>(name);
+    if (!nullToAbsent || shopName != null) {
+      map['shop_name'] = Variable<String>(shopName);
+    }
     if (!nullToAbsent || phone != null) {
       map['phone'] = Variable<String>(phone);
     }
+    if (!nullToAbsent || address != null) {
+      map['address'] = Variable<String>(address);
+    }
+    map['customer_type'] = Variable<String>(customerType);
     if (!nullToAbsent || creditLimitPaisa != null) {
       map['credit_limit_paisa'] = Variable<int>(creditLimitPaisa);
     }
@@ -2736,8 +2797,15 @@ class Customer extends DataClass implements Insertable<Customer> {
     return CustomersCompanion(
       id: Value(id),
       name: Value(name),
+      shopName: shopName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(shopName),
       phone:
           phone == null && nullToAbsent ? const Value.absent() : Value(phone),
+      address: address == null && nullToAbsent
+          ? const Value.absent()
+          : Value(address),
+      customerType: Value(customerType),
       creditLimitPaisa: creditLimitPaisa == null && nullToAbsent
           ? const Value.absent()
           : Value(creditLimitPaisa),
@@ -2751,7 +2819,10 @@ class Customer extends DataClass implements Insertable<Customer> {
     return Customer(
       id: serializer.fromJson<int>(json['id']),
       name: serializer.fromJson<String>(json['name']),
+      shopName: serializer.fromJson<String?>(json['shopName']),
       phone: serializer.fromJson<String?>(json['phone']),
+      address: serializer.fromJson<String?>(json['address']),
+      customerType: serializer.fromJson<String>(json['customerType']),
       creditLimitPaisa: serializer.fromJson<int?>(json['creditLimitPaisa']),
       currentBalancePaisa:
           serializer.fromJson<int>(json['currentBalancePaisa']),
@@ -2763,7 +2834,10 @@ class Customer extends DataClass implements Insertable<Customer> {
     return <String, dynamic>{
       'id': serializer.toJson<int>(id),
       'name': serializer.toJson<String>(name),
+      'shopName': serializer.toJson<String?>(shopName),
       'phone': serializer.toJson<String?>(phone),
+      'address': serializer.toJson<String?>(address),
+      'customerType': serializer.toJson<String>(customerType),
       'creditLimitPaisa': serializer.toJson<int?>(creditLimitPaisa),
       'currentBalancePaisa': serializer.toJson<int>(currentBalancePaisa),
     };
@@ -2772,13 +2846,19 @@ class Customer extends DataClass implements Insertable<Customer> {
   Customer copyWith(
           {int? id,
           String? name,
+          Value<String?> shopName = const Value.absent(),
           Value<String?> phone = const Value.absent(),
+          Value<String?> address = const Value.absent(),
+          String? customerType,
           Value<int?> creditLimitPaisa = const Value.absent(),
           int? currentBalancePaisa}) =>
       Customer(
         id: id ?? this.id,
         name: name ?? this.name,
+        shopName: shopName.present ? shopName.value : this.shopName,
         phone: phone.present ? phone.value : this.phone,
+        address: address.present ? address.value : this.address,
+        customerType: customerType ?? this.customerType,
         creditLimitPaisa: creditLimitPaisa.present
             ? creditLimitPaisa.value
             : this.creditLimitPaisa,
@@ -2788,7 +2868,12 @@ class Customer extends DataClass implements Insertable<Customer> {
     return Customer(
       id: data.id.present ? data.id.value : this.id,
       name: data.name.present ? data.name.value : this.name,
+      shopName: data.shopName.present ? data.shopName.value : this.shopName,
       phone: data.phone.present ? data.phone.value : this.phone,
+      address: data.address.present ? data.address.value : this.address,
+      customerType: data.customerType.present
+          ? data.customerType.value
+          : this.customerType,
       creditLimitPaisa: data.creditLimitPaisa.present
           ? data.creditLimitPaisa.value
           : this.creditLimitPaisa,
@@ -2803,7 +2888,10 @@ class Customer extends DataClass implements Insertable<Customer> {
     return (StringBuffer('Customer(')
           ..write('id: $id, ')
           ..write('name: $name, ')
+          ..write('shopName: $shopName, ')
           ..write('phone: $phone, ')
+          ..write('address: $address, ')
+          ..write('customerType: $customerType, ')
           ..write('creditLimitPaisa: $creditLimitPaisa, ')
           ..write('currentBalancePaisa: $currentBalancePaisa')
           ..write(')'))
@@ -2811,15 +2899,18 @@ class Customer extends DataClass implements Insertable<Customer> {
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, name, phone, creditLimitPaisa, currentBalancePaisa);
+  int get hashCode => Object.hash(id, name, shopName, phone, address,
+      customerType, creditLimitPaisa, currentBalancePaisa);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is Customer &&
           other.id == this.id &&
           other.name == this.name &&
+          other.shopName == this.shopName &&
           other.phone == this.phone &&
+          other.address == this.address &&
+          other.customerType == this.customerType &&
           other.creditLimitPaisa == this.creditLimitPaisa &&
           other.currentBalancePaisa == this.currentBalancePaisa);
 }
@@ -2827,34 +2918,49 @@ class Customer extends DataClass implements Insertable<Customer> {
 class CustomersCompanion extends UpdateCompanion<Customer> {
   final Value<int> id;
   final Value<String> name;
+  final Value<String?> shopName;
   final Value<String?> phone;
+  final Value<String?> address;
+  final Value<String> customerType;
   final Value<int?> creditLimitPaisa;
   final Value<int> currentBalancePaisa;
   const CustomersCompanion({
     this.id = const Value.absent(),
     this.name = const Value.absent(),
+    this.shopName = const Value.absent(),
     this.phone = const Value.absent(),
+    this.address = const Value.absent(),
+    this.customerType = const Value.absent(),
     this.creditLimitPaisa = const Value.absent(),
     this.currentBalancePaisa = const Value.absent(),
   });
   CustomersCompanion.insert({
     this.id = const Value.absent(),
     required String name,
+    this.shopName = const Value.absent(),
     this.phone = const Value.absent(),
+    this.address = const Value.absent(),
+    this.customerType = const Value.absent(),
     this.creditLimitPaisa = const Value.absent(),
     this.currentBalancePaisa = const Value.absent(),
   }) : name = Value(name);
   static Insertable<Customer> custom({
     Expression<int>? id,
     Expression<String>? name,
+    Expression<String>? shopName,
     Expression<String>? phone,
+    Expression<String>? address,
+    Expression<String>? customerType,
     Expression<int>? creditLimitPaisa,
     Expression<int>? currentBalancePaisa,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (name != null) 'name': name,
+      if (shopName != null) 'shop_name': shopName,
       if (phone != null) 'phone': phone,
+      if (address != null) 'address': address,
+      if (customerType != null) 'customer_type': customerType,
       if (creditLimitPaisa != null) 'credit_limit_paisa': creditLimitPaisa,
       if (currentBalancePaisa != null)
         'current_balance_paisa': currentBalancePaisa,
@@ -2864,13 +2970,19 @@ class CustomersCompanion extends UpdateCompanion<Customer> {
   CustomersCompanion copyWith(
       {Value<int>? id,
       Value<String>? name,
+      Value<String?>? shopName,
       Value<String?>? phone,
+      Value<String?>? address,
+      Value<String>? customerType,
       Value<int?>? creditLimitPaisa,
       Value<int>? currentBalancePaisa}) {
     return CustomersCompanion(
       id: id ?? this.id,
       name: name ?? this.name,
+      shopName: shopName ?? this.shopName,
       phone: phone ?? this.phone,
+      address: address ?? this.address,
+      customerType: customerType ?? this.customerType,
       creditLimitPaisa: creditLimitPaisa ?? this.creditLimitPaisa,
       currentBalancePaisa: currentBalancePaisa ?? this.currentBalancePaisa,
     );
@@ -2885,8 +2997,17 @@ class CustomersCompanion extends UpdateCompanion<Customer> {
     if (name.present) {
       map['name'] = Variable<String>(name.value);
     }
+    if (shopName.present) {
+      map['shop_name'] = Variable<String>(shopName.value);
+    }
     if (phone.present) {
       map['phone'] = Variable<String>(phone.value);
+    }
+    if (address.present) {
+      map['address'] = Variable<String>(address.value);
+    }
+    if (customerType.present) {
+      map['customer_type'] = Variable<String>(customerType.value);
     }
     if (creditLimitPaisa.present) {
       map['credit_limit_paisa'] = Variable<int>(creditLimitPaisa.value);
@@ -2902,7 +3023,10 @@ class CustomersCompanion extends UpdateCompanion<Customer> {
     return (StringBuffer('CustomersCompanion(')
           ..write('id: $id, ')
           ..write('name: $name, ')
+          ..write('shopName: $shopName, ')
           ..write('phone: $phone, ')
+          ..write('address: $address, ')
+          ..write('customerType: $customerType, ')
           ..write('creditLimitPaisa: $creditLimitPaisa, ')
           ..write('currentBalancePaisa: $currentBalancePaisa')
           ..write(')'))
@@ -2934,30 +3058,45 @@ class $CustomerLedgerEntriesTable extends CustomerLedgerEntries
       requiredDuringInsert: true,
       defaultConstraints:
           GeneratedColumn.constraintIsAlways('REFERENCES customers (id)'));
-  static const VerificationMeta _amountPaisaMeta =
-      const VerificationMeta('amountPaisa');
+  static const VerificationMeta _invoiceIdMeta =
+      const VerificationMeta('invoiceId');
   @override
-  late final GeneratedColumn<int> amountPaisa = GeneratedColumn<int>(
-      'amount_paisa', aliasedName, false,
-      type: DriftSqlType.int, requiredDuringInsert: true);
+  late final GeneratedColumn<int> invoiceId = GeneratedColumn<int>(
+      'invoice_id', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
   static const VerificationMeta _entryTypeMeta =
       const VerificationMeta('entryType');
   @override
   late final GeneratedColumn<String> entryType = GeneratedColumn<String>(
       'entry_type', aliasedName, false,
       type: DriftSqlType.string, requiredDuringInsert: true);
-  static const VerificationMeta _returnClaimIdMeta =
-      const VerificationMeta('returnClaimId');
+  static const VerificationMeta _debitAmountPaisaMeta =
+      const VerificationMeta('debitAmountPaisa');
   @override
-  late final GeneratedColumn<int> returnClaimId = GeneratedColumn<int>(
-      'return_claim_id', aliasedName, true,
-      type: DriftSqlType.int, requiredDuringInsert: false);
-  static const VerificationMeta _paymentIdMeta =
-      const VerificationMeta('paymentId');
+  late final GeneratedColumn<int> debitAmountPaisa = GeneratedColumn<int>(
+      'debit_amount_paisa', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _creditAmountPaisaMeta =
+      const VerificationMeta('creditAmountPaisa');
   @override
-  late final GeneratedColumn<int> paymentId = GeneratedColumn<int>(
-      'payment_id', aliasedName, true,
-      type: DriftSqlType.int, requiredDuringInsert: false);
+  late final GeneratedColumn<int> creditAmountPaisa = GeneratedColumn<int>(
+      'credit_amount_paisa', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _runningBalancePaisaMeta =
+      const VerificationMeta('runningBalancePaisa');
+  @override
+  late final GeneratedColumn<int> runningBalancePaisa = GeneratedColumn<int>(
+      'running_balance_paisa', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _notesMeta = const VerificationMeta('notes');
+  @override
+  late final GeneratedColumn<String> notes = GeneratedColumn<String>(
+      'notes', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
   static const VerificationMeta _createdAtMeta =
       const VerificationMeta('createdAt');
   @override
@@ -2970,10 +3109,12 @@ class $CustomerLedgerEntriesTable extends CustomerLedgerEntries
   List<GeneratedColumn> get $columns => [
         id,
         customerId,
-        amountPaisa,
+        invoiceId,
         entryType,
-        returnClaimId,
-        paymentId,
+        debitAmountPaisa,
+        creditAmountPaisa,
+        runningBalancePaisa,
+        notes,
         createdAt
       ];
   @override
@@ -2998,13 +3139,9 @@ class $CustomerLedgerEntriesTable extends CustomerLedgerEntries
     } else if (isInserting) {
       context.missing(_customerIdMeta);
     }
-    if (data.containsKey('amount_paisa')) {
-      context.handle(
-          _amountPaisaMeta,
-          amountPaisa.isAcceptableOrUnknown(
-              data['amount_paisa']!, _amountPaisaMeta));
-    } else if (isInserting) {
-      context.missing(_amountPaisaMeta);
+    if (data.containsKey('invoice_id')) {
+      context.handle(_invoiceIdMeta,
+          invoiceId.isAcceptableOrUnknown(data['invoice_id']!, _invoiceIdMeta));
     }
     if (data.containsKey('entry_type')) {
       context.handle(_entryTypeMeta,
@@ -3012,15 +3149,29 @@ class $CustomerLedgerEntriesTable extends CustomerLedgerEntries
     } else if (isInserting) {
       context.missing(_entryTypeMeta);
     }
-    if (data.containsKey('return_claim_id')) {
+    if (data.containsKey('debit_amount_paisa')) {
       context.handle(
-          _returnClaimIdMeta,
-          returnClaimId.isAcceptableOrUnknown(
-              data['return_claim_id']!, _returnClaimIdMeta));
+          _debitAmountPaisaMeta,
+          debitAmountPaisa.isAcceptableOrUnknown(
+              data['debit_amount_paisa']!, _debitAmountPaisaMeta));
     }
-    if (data.containsKey('payment_id')) {
-      context.handle(_paymentIdMeta,
-          paymentId.isAcceptableOrUnknown(data['payment_id']!, _paymentIdMeta));
+    if (data.containsKey('credit_amount_paisa')) {
+      context.handle(
+          _creditAmountPaisaMeta,
+          creditAmountPaisa.isAcceptableOrUnknown(
+              data['credit_amount_paisa']!, _creditAmountPaisaMeta));
+    }
+    if (data.containsKey('running_balance_paisa')) {
+      context.handle(
+          _runningBalancePaisaMeta,
+          runningBalancePaisa.isAcceptableOrUnknown(
+              data['running_balance_paisa']!, _runningBalancePaisaMeta));
+    } else if (isInserting) {
+      context.missing(_runningBalancePaisaMeta);
+    }
+    if (data.containsKey('notes')) {
+      context.handle(
+          _notesMeta, notes.isAcceptableOrUnknown(data['notes']!, _notesMeta));
     }
     if (data.containsKey('created_at')) {
       context.handle(_createdAtMeta,
@@ -3039,14 +3190,18 @@ class $CustomerLedgerEntriesTable extends CustomerLedgerEntries
           .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
       customerId: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}customer_id'])!,
-      amountPaisa: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}amount_paisa'])!,
+      invoiceId: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}invoice_id']),
       entryType: attachedDatabase.typeMapping
           .read(DriftSqlType.string, data['${effectivePrefix}entry_type'])!,
-      returnClaimId: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}return_claim_id']),
-      paymentId: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}payment_id']),
+      debitAmountPaisa: attachedDatabase.typeMapping.read(
+          DriftSqlType.int, data['${effectivePrefix}debit_amount_paisa'])!,
+      creditAmountPaisa: attachedDatabase.typeMapping.read(
+          DriftSqlType.int, data['${effectivePrefix}credit_amount_paisa'])!,
+      runningBalancePaisa: attachedDatabase.typeMapping.read(
+          DriftSqlType.int, data['${effectivePrefix}running_balance_paisa'])!,
+      notes: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}notes']),
       createdAt: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
     );
@@ -3062,31 +3217,37 @@ class CustomerLedgerEntry extends DataClass
     implements Insertable<CustomerLedgerEntry> {
   final int id;
   final int customerId;
-  final int amountPaisa;
+  final int? invoiceId;
   final String entryType;
-  final int? returnClaimId;
-  final int? paymentId;
+  final int debitAmountPaisa;
+  final int creditAmountPaisa;
+  final int runningBalancePaisa;
+  final String? notes;
   final DateTime createdAt;
   const CustomerLedgerEntry(
       {required this.id,
       required this.customerId,
-      required this.amountPaisa,
+      this.invoiceId,
       required this.entryType,
-      this.returnClaimId,
-      this.paymentId,
+      required this.debitAmountPaisa,
+      required this.creditAmountPaisa,
+      required this.runningBalancePaisa,
+      this.notes,
       required this.createdAt});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<int>(id);
     map['customer_id'] = Variable<int>(customerId);
-    map['amount_paisa'] = Variable<int>(amountPaisa);
-    map['entry_type'] = Variable<String>(entryType);
-    if (!nullToAbsent || returnClaimId != null) {
-      map['return_claim_id'] = Variable<int>(returnClaimId);
+    if (!nullToAbsent || invoiceId != null) {
+      map['invoice_id'] = Variable<int>(invoiceId);
     }
-    if (!nullToAbsent || paymentId != null) {
-      map['payment_id'] = Variable<int>(paymentId);
+    map['entry_type'] = Variable<String>(entryType);
+    map['debit_amount_paisa'] = Variable<int>(debitAmountPaisa);
+    map['credit_amount_paisa'] = Variable<int>(creditAmountPaisa);
+    map['running_balance_paisa'] = Variable<int>(runningBalancePaisa);
+    if (!nullToAbsent || notes != null) {
+      map['notes'] = Variable<String>(notes);
     }
     map['created_at'] = Variable<DateTime>(createdAt);
     return map;
@@ -3096,14 +3257,15 @@ class CustomerLedgerEntry extends DataClass
     return CustomerLedgerEntriesCompanion(
       id: Value(id),
       customerId: Value(customerId),
-      amountPaisa: Value(amountPaisa),
+      invoiceId: invoiceId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(invoiceId),
       entryType: Value(entryType),
-      returnClaimId: returnClaimId == null && nullToAbsent
-          ? const Value.absent()
-          : Value(returnClaimId),
-      paymentId: paymentId == null && nullToAbsent
-          ? const Value.absent()
-          : Value(paymentId),
+      debitAmountPaisa: Value(debitAmountPaisa),
+      creditAmountPaisa: Value(creditAmountPaisa),
+      runningBalancePaisa: Value(runningBalancePaisa),
+      notes:
+          notes == null && nullToAbsent ? const Value.absent() : Value(notes),
       createdAt: Value(createdAt),
     );
   }
@@ -3114,10 +3276,13 @@ class CustomerLedgerEntry extends DataClass
     return CustomerLedgerEntry(
       id: serializer.fromJson<int>(json['id']),
       customerId: serializer.fromJson<int>(json['customerId']),
-      amountPaisa: serializer.fromJson<int>(json['amountPaisa']),
+      invoiceId: serializer.fromJson<int?>(json['invoiceId']),
       entryType: serializer.fromJson<String>(json['entryType']),
-      returnClaimId: serializer.fromJson<int?>(json['returnClaimId']),
-      paymentId: serializer.fromJson<int?>(json['paymentId']),
+      debitAmountPaisa: serializer.fromJson<int>(json['debitAmountPaisa']),
+      creditAmountPaisa: serializer.fromJson<int>(json['creditAmountPaisa']),
+      runningBalancePaisa:
+          serializer.fromJson<int>(json['runningBalancePaisa']),
+      notes: serializer.fromJson<String?>(json['notes']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
     );
   }
@@ -3127,10 +3292,12 @@ class CustomerLedgerEntry extends DataClass
     return <String, dynamic>{
       'id': serializer.toJson<int>(id),
       'customerId': serializer.toJson<int>(customerId),
-      'amountPaisa': serializer.toJson<int>(amountPaisa),
+      'invoiceId': serializer.toJson<int?>(invoiceId),
       'entryType': serializer.toJson<String>(entryType),
-      'returnClaimId': serializer.toJson<int?>(returnClaimId),
-      'paymentId': serializer.toJson<int?>(paymentId),
+      'debitAmountPaisa': serializer.toJson<int>(debitAmountPaisa),
+      'creditAmountPaisa': serializer.toJson<int>(creditAmountPaisa),
+      'runningBalancePaisa': serializer.toJson<int>(runningBalancePaisa),
+      'notes': serializer.toJson<String?>(notes),
       'createdAt': serializer.toJson<DateTime>(createdAt),
     };
   }
@@ -3138,19 +3305,22 @@ class CustomerLedgerEntry extends DataClass
   CustomerLedgerEntry copyWith(
           {int? id,
           int? customerId,
-          int? amountPaisa,
+          Value<int?> invoiceId = const Value.absent(),
           String? entryType,
-          Value<int?> returnClaimId = const Value.absent(),
-          Value<int?> paymentId = const Value.absent(),
+          int? debitAmountPaisa,
+          int? creditAmountPaisa,
+          int? runningBalancePaisa,
+          Value<String?> notes = const Value.absent(),
           DateTime? createdAt}) =>
       CustomerLedgerEntry(
         id: id ?? this.id,
         customerId: customerId ?? this.customerId,
-        amountPaisa: amountPaisa ?? this.amountPaisa,
+        invoiceId: invoiceId.present ? invoiceId.value : this.invoiceId,
         entryType: entryType ?? this.entryType,
-        returnClaimId:
-            returnClaimId.present ? returnClaimId.value : this.returnClaimId,
-        paymentId: paymentId.present ? paymentId.value : this.paymentId,
+        debitAmountPaisa: debitAmountPaisa ?? this.debitAmountPaisa,
+        creditAmountPaisa: creditAmountPaisa ?? this.creditAmountPaisa,
+        runningBalancePaisa: runningBalancePaisa ?? this.runningBalancePaisa,
+        notes: notes.present ? notes.value : this.notes,
         createdAt: createdAt ?? this.createdAt,
       );
   CustomerLedgerEntry copyWithCompanion(CustomerLedgerEntriesCompanion data) {
@@ -3158,13 +3328,18 @@ class CustomerLedgerEntry extends DataClass
       id: data.id.present ? data.id.value : this.id,
       customerId:
           data.customerId.present ? data.customerId.value : this.customerId,
-      amountPaisa:
-          data.amountPaisa.present ? data.amountPaisa.value : this.amountPaisa,
+      invoiceId: data.invoiceId.present ? data.invoiceId.value : this.invoiceId,
       entryType: data.entryType.present ? data.entryType.value : this.entryType,
-      returnClaimId: data.returnClaimId.present
-          ? data.returnClaimId.value
-          : this.returnClaimId,
-      paymentId: data.paymentId.present ? data.paymentId.value : this.paymentId,
+      debitAmountPaisa: data.debitAmountPaisa.present
+          ? data.debitAmountPaisa.value
+          : this.debitAmountPaisa,
+      creditAmountPaisa: data.creditAmountPaisa.present
+          ? data.creditAmountPaisa.value
+          : this.creditAmountPaisa,
+      runningBalancePaisa: data.runningBalancePaisa.present
+          ? data.runningBalancePaisa.value
+          : this.runningBalancePaisa,
+      notes: data.notes.present ? data.notes.value : this.notes,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
     );
   }
@@ -3174,28 +3349,40 @@ class CustomerLedgerEntry extends DataClass
     return (StringBuffer('CustomerLedgerEntry(')
           ..write('id: $id, ')
           ..write('customerId: $customerId, ')
-          ..write('amountPaisa: $amountPaisa, ')
+          ..write('invoiceId: $invoiceId, ')
           ..write('entryType: $entryType, ')
-          ..write('returnClaimId: $returnClaimId, ')
-          ..write('paymentId: $paymentId, ')
+          ..write('debitAmountPaisa: $debitAmountPaisa, ')
+          ..write('creditAmountPaisa: $creditAmountPaisa, ')
+          ..write('runningBalancePaisa: $runningBalancePaisa, ')
+          ..write('notes: $notes, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, customerId, amountPaisa, entryType,
-      returnClaimId, paymentId, createdAt);
+  int get hashCode => Object.hash(
+      id,
+      customerId,
+      invoiceId,
+      entryType,
+      debitAmountPaisa,
+      creditAmountPaisa,
+      runningBalancePaisa,
+      notes,
+      createdAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is CustomerLedgerEntry &&
           other.id == this.id &&
           other.customerId == this.customerId &&
-          other.amountPaisa == this.amountPaisa &&
+          other.invoiceId == this.invoiceId &&
           other.entryType == this.entryType &&
-          other.returnClaimId == this.returnClaimId &&
-          other.paymentId == this.paymentId &&
+          other.debitAmountPaisa == this.debitAmountPaisa &&
+          other.creditAmountPaisa == this.creditAmountPaisa &&
+          other.runningBalancePaisa == this.runningBalancePaisa &&
+          other.notes == this.notes &&
           other.createdAt == this.createdAt);
 }
 
@@ -3203,47 +3390,58 @@ class CustomerLedgerEntriesCompanion
     extends UpdateCompanion<CustomerLedgerEntry> {
   final Value<int> id;
   final Value<int> customerId;
-  final Value<int> amountPaisa;
+  final Value<int?> invoiceId;
   final Value<String> entryType;
-  final Value<int?> returnClaimId;
-  final Value<int?> paymentId;
+  final Value<int> debitAmountPaisa;
+  final Value<int> creditAmountPaisa;
+  final Value<int> runningBalancePaisa;
+  final Value<String?> notes;
   final Value<DateTime> createdAt;
   const CustomerLedgerEntriesCompanion({
     this.id = const Value.absent(),
     this.customerId = const Value.absent(),
-    this.amountPaisa = const Value.absent(),
+    this.invoiceId = const Value.absent(),
     this.entryType = const Value.absent(),
-    this.returnClaimId = const Value.absent(),
-    this.paymentId = const Value.absent(),
+    this.debitAmountPaisa = const Value.absent(),
+    this.creditAmountPaisa = const Value.absent(),
+    this.runningBalancePaisa = const Value.absent(),
+    this.notes = const Value.absent(),
     this.createdAt = const Value.absent(),
   });
   CustomerLedgerEntriesCompanion.insert({
     this.id = const Value.absent(),
     required int customerId,
-    required int amountPaisa,
+    this.invoiceId = const Value.absent(),
     required String entryType,
-    this.returnClaimId = const Value.absent(),
-    this.paymentId = const Value.absent(),
+    this.debitAmountPaisa = const Value.absent(),
+    this.creditAmountPaisa = const Value.absent(),
+    required int runningBalancePaisa,
+    this.notes = const Value.absent(),
     this.createdAt = const Value.absent(),
   })  : customerId = Value(customerId),
-        amountPaisa = Value(amountPaisa),
-        entryType = Value(entryType);
+        entryType = Value(entryType),
+        runningBalancePaisa = Value(runningBalancePaisa);
   static Insertable<CustomerLedgerEntry> custom({
     Expression<int>? id,
     Expression<int>? customerId,
-    Expression<int>? amountPaisa,
+    Expression<int>? invoiceId,
     Expression<String>? entryType,
-    Expression<int>? returnClaimId,
-    Expression<int>? paymentId,
+    Expression<int>? debitAmountPaisa,
+    Expression<int>? creditAmountPaisa,
+    Expression<int>? runningBalancePaisa,
+    Expression<String>? notes,
     Expression<DateTime>? createdAt,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (customerId != null) 'customer_id': customerId,
-      if (amountPaisa != null) 'amount_paisa': amountPaisa,
+      if (invoiceId != null) 'invoice_id': invoiceId,
       if (entryType != null) 'entry_type': entryType,
-      if (returnClaimId != null) 'return_claim_id': returnClaimId,
-      if (paymentId != null) 'payment_id': paymentId,
+      if (debitAmountPaisa != null) 'debit_amount_paisa': debitAmountPaisa,
+      if (creditAmountPaisa != null) 'credit_amount_paisa': creditAmountPaisa,
+      if (runningBalancePaisa != null)
+        'running_balance_paisa': runningBalancePaisa,
+      if (notes != null) 'notes': notes,
       if (createdAt != null) 'created_at': createdAt,
     });
   }
@@ -3251,18 +3449,22 @@ class CustomerLedgerEntriesCompanion
   CustomerLedgerEntriesCompanion copyWith(
       {Value<int>? id,
       Value<int>? customerId,
-      Value<int>? amountPaisa,
+      Value<int?>? invoiceId,
       Value<String>? entryType,
-      Value<int?>? returnClaimId,
-      Value<int?>? paymentId,
+      Value<int>? debitAmountPaisa,
+      Value<int>? creditAmountPaisa,
+      Value<int>? runningBalancePaisa,
+      Value<String?>? notes,
       Value<DateTime>? createdAt}) {
     return CustomerLedgerEntriesCompanion(
       id: id ?? this.id,
       customerId: customerId ?? this.customerId,
-      amountPaisa: amountPaisa ?? this.amountPaisa,
+      invoiceId: invoiceId ?? this.invoiceId,
       entryType: entryType ?? this.entryType,
-      returnClaimId: returnClaimId ?? this.returnClaimId,
-      paymentId: paymentId ?? this.paymentId,
+      debitAmountPaisa: debitAmountPaisa ?? this.debitAmountPaisa,
+      creditAmountPaisa: creditAmountPaisa ?? this.creditAmountPaisa,
+      runningBalancePaisa: runningBalancePaisa ?? this.runningBalancePaisa,
+      notes: notes ?? this.notes,
       createdAt: createdAt ?? this.createdAt,
     );
   }
@@ -3276,17 +3478,23 @@ class CustomerLedgerEntriesCompanion
     if (customerId.present) {
       map['customer_id'] = Variable<int>(customerId.value);
     }
-    if (amountPaisa.present) {
-      map['amount_paisa'] = Variable<int>(amountPaisa.value);
+    if (invoiceId.present) {
+      map['invoice_id'] = Variable<int>(invoiceId.value);
     }
     if (entryType.present) {
       map['entry_type'] = Variable<String>(entryType.value);
     }
-    if (returnClaimId.present) {
-      map['return_claim_id'] = Variable<int>(returnClaimId.value);
+    if (debitAmountPaisa.present) {
+      map['debit_amount_paisa'] = Variable<int>(debitAmountPaisa.value);
     }
-    if (paymentId.present) {
-      map['payment_id'] = Variable<int>(paymentId.value);
+    if (creditAmountPaisa.present) {
+      map['credit_amount_paisa'] = Variable<int>(creditAmountPaisa.value);
+    }
+    if (runningBalancePaisa.present) {
+      map['running_balance_paisa'] = Variable<int>(runningBalancePaisa.value);
+    }
+    if (notes.present) {
+      map['notes'] = Variable<String>(notes.value);
     }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
@@ -3299,10 +3507,12 @@ class CustomerLedgerEntriesCompanion
     return (StringBuffer('CustomerLedgerEntriesCompanion(')
           ..write('id: $id, ')
           ..write('customerId: $customerId, ')
-          ..write('amountPaisa: $amountPaisa, ')
+          ..write('invoiceId: $invoiceId, ')
           ..write('entryType: $entryType, ')
-          ..write('returnClaimId: $returnClaimId, ')
-          ..write('paymentId: $paymentId, ')
+          ..write('debitAmountPaisa: $debitAmountPaisa, ')
+          ..write('creditAmountPaisa: $creditAmountPaisa, ')
+          ..write('runningBalancePaisa: $runningBalancePaisa, ')
+          ..write('notes: $notes, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
@@ -3323,6 +3533,14 @@ class $SalesTable extends Sales with TableInfo<$SalesTable, Sale> {
       requiredDuringInsert: false,
       defaultConstraints:
           GeneratedColumn.constraintIsAlways('PRIMARY KEY AUTOINCREMENT'));
+  static const VerificationMeta _billNumberMeta =
+      const VerificationMeta('billNumber');
+  @override
+  late final GeneratedColumn<int> billNumber = GeneratedColumn<int>(
+      'bill_number', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: true,
+      defaultConstraints: GeneratedColumn.constraintIsAlways('UNIQUE'));
   static const VerificationMeta _customerIdMeta =
       const VerificationMeta('customerId');
   @override
@@ -3332,33 +3550,61 @@ class $SalesTable extends Sales with TableInfo<$SalesTable, Sale> {
       requiredDuringInsert: false,
       defaultConstraints:
           GeneratedColumn.constraintIsAlways('REFERENCES customers (id)'));
-  static const VerificationMeta _totalAmountPaisaMeta =
-      const VerificationMeta('totalAmountPaisa');
+  static const VerificationMeta _saleTypeMeta =
+      const VerificationMeta('saleType');
   @override
-  late final GeneratedColumn<int> totalAmountPaisa = GeneratedColumn<int>(
-      'total_amount_paisa', aliasedName, false,
-      type: DriftSqlType.int, requiredDuringInsert: true);
-  static const VerificationMeta _paymentModeMeta =
-      const VerificationMeta('paymentMode');
-  @override
-  late final GeneratedColumn<String> paymentMode = GeneratedColumn<String>(
-      'payment_mode', aliasedName, false,
+  late final GeneratedColumn<String> saleType = GeneratedColumn<String>(
+      'sale_type', aliasedName, false,
       type: DriftSqlType.string, requiredDuringInsert: true);
-  static const VerificationMeta _creditOverrideByMeta =
-      const VerificationMeta('creditOverrideBy');
+  static const VerificationMeta _grossAmountPaisaMeta =
+      const VerificationMeta('grossAmountPaisa');
   @override
-  late final GeneratedColumn<int> creditOverrideBy = GeneratedColumn<int>(
-      'credit_override_by', aliasedName, true,
+  late final GeneratedColumn<int> grossAmountPaisa = GeneratedColumn<int>(
+      'gross_amount_paisa', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _discountAmountPaisaMeta =
+      const VerificationMeta('discountAmountPaisa');
+  @override
+  late final GeneratedColumn<int> discountAmountPaisa = GeneratedColumn<int>(
+      'discount_amount_paisa', aliasedName, false,
       type: DriftSqlType.int,
       requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _netAmountPaisaMeta =
+      const VerificationMeta('netAmountPaisa');
+  @override
+  late final GeneratedColumn<int> netAmountPaisa = GeneratedColumn<int>(
+      'net_amount_paisa', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _paidAmountPaisaMeta =
+      const VerificationMeta('paidAmountPaisa');
+  @override
+  late final GeneratedColumn<int> paidAmountPaisa = GeneratedColumn<int>(
+      'paid_amount_paisa', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
+  static const VerificationMeta _previousBalancePaisaMeta =
+      const VerificationMeta('previousBalancePaisa');
+  @override
+  late final GeneratedColumn<int> previousBalancePaisa = GeneratedColumn<int>(
+      'previous_balance_paisa', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(0));
+  static const VerificationMeta _paymentStatusMeta =
+      const VerificationMeta('paymentStatus');
+  @override
+  late final GeneratedColumn<String> paymentStatus = GeneratedColumn<String>(
+      'payment_status', aliasedName, false,
+      type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _createdByMeta =
+      const VerificationMeta('createdBy');
+  @override
+  late final GeneratedColumn<int> createdBy = GeneratedColumn<int>(
+      'created_by', aliasedName, false,
+      type: DriftSqlType.int,
+      requiredDuringInsert: true,
       defaultConstraints:
           GeneratedColumn.constraintIsAlways('REFERENCES users (id)'));
-  static const VerificationMeta _creditOverrideAtMeta =
-      const VerificationMeta('creditOverrideAt');
-  @override
-  late final GeneratedColumn<DateTime> creditOverrideAt =
-      GeneratedColumn<DateTime>('credit_override_at', aliasedName, true,
-          type: DriftSqlType.dateTime, requiredDuringInsert: false);
   static const VerificationMeta _createdAtMeta =
       const VerificationMeta('createdAt');
   @override
@@ -3370,11 +3616,16 @@ class $SalesTable extends Sales with TableInfo<$SalesTable, Sale> {
   @override
   List<GeneratedColumn> get $columns => [
         id,
+        billNumber,
         customerId,
-        totalAmountPaisa,
-        paymentMode,
-        creditOverrideBy,
-        creditOverrideAt,
+        saleType,
+        grossAmountPaisa,
+        discountAmountPaisa,
+        netAmountPaisa,
+        paidAmountPaisa,
+        previousBalancePaisa,
+        paymentStatus,
+        createdBy,
         createdAt
       ];
   @override
@@ -3390,39 +3641,75 @@ class $SalesTable extends Sales with TableInfo<$SalesTable, Sale> {
     if (data.containsKey('id')) {
       context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
     }
+    if (data.containsKey('bill_number')) {
+      context.handle(
+          _billNumberMeta,
+          billNumber.isAcceptableOrUnknown(
+              data['bill_number']!, _billNumberMeta));
+    } else if (isInserting) {
+      context.missing(_billNumberMeta);
+    }
     if (data.containsKey('customer_id')) {
       context.handle(
           _customerIdMeta,
           customerId.isAcceptableOrUnknown(
               data['customer_id']!, _customerIdMeta));
     }
-    if (data.containsKey('total_amount_paisa')) {
-      context.handle(
-          _totalAmountPaisaMeta,
-          totalAmountPaisa.isAcceptableOrUnknown(
-              data['total_amount_paisa']!, _totalAmountPaisaMeta));
+    if (data.containsKey('sale_type')) {
+      context.handle(_saleTypeMeta,
+          saleType.isAcceptableOrUnknown(data['sale_type']!, _saleTypeMeta));
     } else if (isInserting) {
-      context.missing(_totalAmountPaisaMeta);
+      context.missing(_saleTypeMeta);
     }
-    if (data.containsKey('payment_mode')) {
+    if (data.containsKey('gross_amount_paisa')) {
       context.handle(
-          _paymentModeMeta,
-          paymentMode.isAcceptableOrUnknown(
-              data['payment_mode']!, _paymentModeMeta));
+          _grossAmountPaisaMeta,
+          grossAmountPaisa.isAcceptableOrUnknown(
+              data['gross_amount_paisa']!, _grossAmountPaisaMeta));
     } else if (isInserting) {
-      context.missing(_paymentModeMeta);
+      context.missing(_grossAmountPaisaMeta);
     }
-    if (data.containsKey('credit_override_by')) {
+    if (data.containsKey('discount_amount_paisa')) {
       context.handle(
-          _creditOverrideByMeta,
-          creditOverrideBy.isAcceptableOrUnknown(
-              data['credit_override_by']!, _creditOverrideByMeta));
+          _discountAmountPaisaMeta,
+          discountAmountPaisa.isAcceptableOrUnknown(
+              data['discount_amount_paisa']!, _discountAmountPaisaMeta));
     }
-    if (data.containsKey('credit_override_at')) {
+    if (data.containsKey('net_amount_paisa')) {
       context.handle(
-          _creditOverrideAtMeta,
-          creditOverrideAt.isAcceptableOrUnknown(
-              data['credit_override_at']!, _creditOverrideAtMeta));
+          _netAmountPaisaMeta,
+          netAmountPaisa.isAcceptableOrUnknown(
+              data['net_amount_paisa']!, _netAmountPaisaMeta));
+    } else if (isInserting) {
+      context.missing(_netAmountPaisaMeta);
+    }
+    if (data.containsKey('paid_amount_paisa')) {
+      context.handle(
+          _paidAmountPaisaMeta,
+          paidAmountPaisa.isAcceptableOrUnknown(
+              data['paid_amount_paisa']!, _paidAmountPaisaMeta));
+    } else if (isInserting) {
+      context.missing(_paidAmountPaisaMeta);
+    }
+    if (data.containsKey('previous_balance_paisa')) {
+      context.handle(
+          _previousBalancePaisaMeta,
+          previousBalancePaisa.isAcceptableOrUnknown(
+              data['previous_balance_paisa']!, _previousBalancePaisaMeta));
+    }
+    if (data.containsKey('payment_status')) {
+      context.handle(
+          _paymentStatusMeta,
+          paymentStatus.isAcceptableOrUnknown(
+              data['payment_status']!, _paymentStatusMeta));
+    } else if (isInserting) {
+      context.missing(_paymentStatusMeta);
+    }
+    if (data.containsKey('created_by')) {
+      context.handle(_createdByMeta,
+          createdBy.isAcceptableOrUnknown(data['created_by']!, _createdByMeta));
+    } else if (isInserting) {
+      context.missing(_createdByMeta);
     }
     if (data.containsKey('created_at')) {
       context.handle(_createdAtMeta,
@@ -3439,16 +3726,26 @@ class $SalesTable extends Sales with TableInfo<$SalesTable, Sale> {
     return Sale(
       id: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
+      billNumber: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}bill_number'])!,
       customerId: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}customer_id']),
-      totalAmountPaisa: attachedDatabase.typeMapping.read(
-          DriftSqlType.int, data['${effectivePrefix}total_amount_paisa'])!,
-      paymentMode: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}payment_mode'])!,
-      creditOverrideBy: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}credit_override_by']),
-      creditOverrideAt: attachedDatabase.typeMapping.read(
-          DriftSqlType.dateTime, data['${effectivePrefix}credit_override_at']),
+      saleType: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}sale_type'])!,
+      grossAmountPaisa: attachedDatabase.typeMapping.read(
+          DriftSqlType.int, data['${effectivePrefix}gross_amount_paisa'])!,
+      discountAmountPaisa: attachedDatabase.typeMapping.read(
+          DriftSqlType.int, data['${effectivePrefix}discount_amount_paisa'])!,
+      netAmountPaisa: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}net_amount_paisa'])!,
+      paidAmountPaisa: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}paid_amount_paisa'])!,
+      previousBalancePaisa: attachedDatabase.typeMapping.read(
+          DriftSqlType.int, data['${effectivePrefix}previous_balance_paisa'])!,
+      paymentStatus: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}payment_status'])!,
+      createdBy: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}created_by'])!,
       createdAt: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}created_at'])!,
     );
@@ -3462,35 +3759,46 @@ class $SalesTable extends Sales with TableInfo<$SalesTable, Sale> {
 
 class Sale extends DataClass implements Insertable<Sale> {
   final int id;
+  final int billNumber;
   final int? customerId;
-  final int totalAmountPaisa;
-  final String paymentMode;
-  final int? creditOverrideBy;
-  final DateTime? creditOverrideAt;
+  final String saleType;
+  final int grossAmountPaisa;
+  final int discountAmountPaisa;
+  final int netAmountPaisa;
+  final int paidAmountPaisa;
+  final int previousBalancePaisa;
+  final String paymentStatus;
+  final int createdBy;
   final DateTime createdAt;
   const Sale(
       {required this.id,
+      required this.billNumber,
       this.customerId,
-      required this.totalAmountPaisa,
-      required this.paymentMode,
-      this.creditOverrideBy,
-      this.creditOverrideAt,
+      required this.saleType,
+      required this.grossAmountPaisa,
+      required this.discountAmountPaisa,
+      required this.netAmountPaisa,
+      required this.paidAmountPaisa,
+      required this.previousBalancePaisa,
+      required this.paymentStatus,
+      required this.createdBy,
       required this.createdAt});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<int>(id);
+    map['bill_number'] = Variable<int>(billNumber);
     if (!nullToAbsent || customerId != null) {
       map['customer_id'] = Variable<int>(customerId);
     }
-    map['total_amount_paisa'] = Variable<int>(totalAmountPaisa);
-    map['payment_mode'] = Variable<String>(paymentMode);
-    if (!nullToAbsent || creditOverrideBy != null) {
-      map['credit_override_by'] = Variable<int>(creditOverrideBy);
-    }
-    if (!nullToAbsent || creditOverrideAt != null) {
-      map['credit_override_at'] = Variable<DateTime>(creditOverrideAt);
-    }
+    map['sale_type'] = Variable<String>(saleType);
+    map['gross_amount_paisa'] = Variable<int>(grossAmountPaisa);
+    map['discount_amount_paisa'] = Variable<int>(discountAmountPaisa);
+    map['net_amount_paisa'] = Variable<int>(netAmountPaisa);
+    map['paid_amount_paisa'] = Variable<int>(paidAmountPaisa);
+    map['previous_balance_paisa'] = Variable<int>(previousBalancePaisa);
+    map['payment_status'] = Variable<String>(paymentStatus);
+    map['created_by'] = Variable<int>(createdBy);
     map['created_at'] = Variable<DateTime>(createdAt);
     return map;
   }
@@ -3498,17 +3806,18 @@ class Sale extends DataClass implements Insertable<Sale> {
   SalesCompanion toCompanion(bool nullToAbsent) {
     return SalesCompanion(
       id: Value(id),
+      billNumber: Value(billNumber),
       customerId: customerId == null && nullToAbsent
           ? const Value.absent()
           : Value(customerId),
-      totalAmountPaisa: Value(totalAmountPaisa),
-      paymentMode: Value(paymentMode),
-      creditOverrideBy: creditOverrideBy == null && nullToAbsent
-          ? const Value.absent()
-          : Value(creditOverrideBy),
-      creditOverrideAt: creditOverrideAt == null && nullToAbsent
-          ? const Value.absent()
-          : Value(creditOverrideAt),
+      saleType: Value(saleType),
+      grossAmountPaisa: Value(grossAmountPaisa),
+      discountAmountPaisa: Value(discountAmountPaisa),
+      netAmountPaisa: Value(netAmountPaisa),
+      paidAmountPaisa: Value(paidAmountPaisa),
+      previousBalancePaisa: Value(previousBalancePaisa),
+      paymentStatus: Value(paymentStatus),
+      createdBy: Value(createdBy),
       createdAt: Value(createdAt),
     );
   }
@@ -3518,12 +3827,18 @@ class Sale extends DataClass implements Insertable<Sale> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return Sale(
       id: serializer.fromJson<int>(json['id']),
+      billNumber: serializer.fromJson<int>(json['billNumber']),
       customerId: serializer.fromJson<int?>(json['customerId']),
-      totalAmountPaisa: serializer.fromJson<int>(json['totalAmountPaisa']),
-      paymentMode: serializer.fromJson<String>(json['paymentMode']),
-      creditOverrideBy: serializer.fromJson<int?>(json['creditOverrideBy']),
-      creditOverrideAt:
-          serializer.fromJson<DateTime?>(json['creditOverrideAt']),
+      saleType: serializer.fromJson<String>(json['saleType']),
+      grossAmountPaisa: serializer.fromJson<int>(json['grossAmountPaisa']),
+      discountAmountPaisa:
+          serializer.fromJson<int>(json['discountAmountPaisa']),
+      netAmountPaisa: serializer.fromJson<int>(json['netAmountPaisa']),
+      paidAmountPaisa: serializer.fromJson<int>(json['paidAmountPaisa']),
+      previousBalancePaisa:
+          serializer.fromJson<int>(json['previousBalancePaisa']),
+      paymentStatus: serializer.fromJson<String>(json['paymentStatus']),
+      createdBy: serializer.fromJson<int>(json['createdBy']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
     );
   }
@@ -3532,52 +3847,74 @@ class Sale extends DataClass implements Insertable<Sale> {
     serializer ??= driftRuntimeOptions.defaultSerializer;
     return <String, dynamic>{
       'id': serializer.toJson<int>(id),
+      'billNumber': serializer.toJson<int>(billNumber),
       'customerId': serializer.toJson<int?>(customerId),
-      'totalAmountPaisa': serializer.toJson<int>(totalAmountPaisa),
-      'paymentMode': serializer.toJson<String>(paymentMode),
-      'creditOverrideBy': serializer.toJson<int?>(creditOverrideBy),
-      'creditOverrideAt': serializer.toJson<DateTime?>(creditOverrideAt),
+      'saleType': serializer.toJson<String>(saleType),
+      'grossAmountPaisa': serializer.toJson<int>(grossAmountPaisa),
+      'discountAmountPaisa': serializer.toJson<int>(discountAmountPaisa),
+      'netAmountPaisa': serializer.toJson<int>(netAmountPaisa),
+      'paidAmountPaisa': serializer.toJson<int>(paidAmountPaisa),
+      'previousBalancePaisa': serializer.toJson<int>(previousBalancePaisa),
+      'paymentStatus': serializer.toJson<String>(paymentStatus),
+      'createdBy': serializer.toJson<int>(createdBy),
       'createdAt': serializer.toJson<DateTime>(createdAt),
     };
   }
 
   Sale copyWith(
           {int? id,
+          int? billNumber,
           Value<int?> customerId = const Value.absent(),
-          int? totalAmountPaisa,
-          String? paymentMode,
-          Value<int?> creditOverrideBy = const Value.absent(),
-          Value<DateTime?> creditOverrideAt = const Value.absent(),
+          String? saleType,
+          int? grossAmountPaisa,
+          int? discountAmountPaisa,
+          int? netAmountPaisa,
+          int? paidAmountPaisa,
+          int? previousBalancePaisa,
+          String? paymentStatus,
+          int? createdBy,
           DateTime? createdAt}) =>
       Sale(
         id: id ?? this.id,
+        billNumber: billNumber ?? this.billNumber,
         customerId: customerId.present ? customerId.value : this.customerId,
-        totalAmountPaisa: totalAmountPaisa ?? this.totalAmountPaisa,
-        paymentMode: paymentMode ?? this.paymentMode,
-        creditOverrideBy: creditOverrideBy.present
-            ? creditOverrideBy.value
-            : this.creditOverrideBy,
-        creditOverrideAt: creditOverrideAt.present
-            ? creditOverrideAt.value
-            : this.creditOverrideAt,
+        saleType: saleType ?? this.saleType,
+        grossAmountPaisa: grossAmountPaisa ?? this.grossAmountPaisa,
+        discountAmountPaisa: discountAmountPaisa ?? this.discountAmountPaisa,
+        netAmountPaisa: netAmountPaisa ?? this.netAmountPaisa,
+        paidAmountPaisa: paidAmountPaisa ?? this.paidAmountPaisa,
+        previousBalancePaisa: previousBalancePaisa ?? this.previousBalancePaisa,
+        paymentStatus: paymentStatus ?? this.paymentStatus,
+        createdBy: createdBy ?? this.createdBy,
         createdAt: createdAt ?? this.createdAt,
       );
   Sale copyWithCompanion(SalesCompanion data) {
     return Sale(
       id: data.id.present ? data.id.value : this.id,
+      billNumber:
+          data.billNumber.present ? data.billNumber.value : this.billNumber,
       customerId:
           data.customerId.present ? data.customerId.value : this.customerId,
-      totalAmountPaisa: data.totalAmountPaisa.present
-          ? data.totalAmountPaisa.value
-          : this.totalAmountPaisa,
-      paymentMode:
-          data.paymentMode.present ? data.paymentMode.value : this.paymentMode,
-      creditOverrideBy: data.creditOverrideBy.present
-          ? data.creditOverrideBy.value
-          : this.creditOverrideBy,
-      creditOverrideAt: data.creditOverrideAt.present
-          ? data.creditOverrideAt.value
-          : this.creditOverrideAt,
+      saleType: data.saleType.present ? data.saleType.value : this.saleType,
+      grossAmountPaisa: data.grossAmountPaisa.present
+          ? data.grossAmountPaisa.value
+          : this.grossAmountPaisa,
+      discountAmountPaisa: data.discountAmountPaisa.present
+          ? data.discountAmountPaisa.value
+          : this.discountAmountPaisa,
+      netAmountPaisa: data.netAmountPaisa.present
+          ? data.netAmountPaisa.value
+          : this.netAmountPaisa,
+      paidAmountPaisa: data.paidAmountPaisa.present
+          ? data.paidAmountPaisa.value
+          : this.paidAmountPaisa,
+      previousBalancePaisa: data.previousBalancePaisa.present
+          ? data.previousBalancePaisa.value
+          : this.previousBalancePaisa,
+      paymentStatus: data.paymentStatus.present
+          ? data.paymentStatus.value
+          : this.paymentStatus,
+      createdBy: data.createdBy.present ? data.createdBy.value : this.createdBy,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
     );
   }
@@ -3586,94 +3923,157 @@ class Sale extends DataClass implements Insertable<Sale> {
   String toString() {
     return (StringBuffer('Sale(')
           ..write('id: $id, ')
+          ..write('billNumber: $billNumber, ')
           ..write('customerId: $customerId, ')
-          ..write('totalAmountPaisa: $totalAmountPaisa, ')
-          ..write('paymentMode: $paymentMode, ')
-          ..write('creditOverrideBy: $creditOverrideBy, ')
-          ..write('creditOverrideAt: $creditOverrideAt, ')
+          ..write('saleType: $saleType, ')
+          ..write('grossAmountPaisa: $grossAmountPaisa, ')
+          ..write('discountAmountPaisa: $discountAmountPaisa, ')
+          ..write('netAmountPaisa: $netAmountPaisa, ')
+          ..write('paidAmountPaisa: $paidAmountPaisa, ')
+          ..write('previousBalancePaisa: $previousBalancePaisa, ')
+          ..write('paymentStatus: $paymentStatus, ')
+          ..write('createdBy: $createdBy, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, customerId, totalAmountPaisa, paymentMode,
-      creditOverrideBy, creditOverrideAt, createdAt);
+  int get hashCode => Object.hash(
+      id,
+      billNumber,
+      customerId,
+      saleType,
+      grossAmountPaisa,
+      discountAmountPaisa,
+      netAmountPaisa,
+      paidAmountPaisa,
+      previousBalancePaisa,
+      paymentStatus,
+      createdBy,
+      createdAt);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is Sale &&
           other.id == this.id &&
+          other.billNumber == this.billNumber &&
           other.customerId == this.customerId &&
-          other.totalAmountPaisa == this.totalAmountPaisa &&
-          other.paymentMode == this.paymentMode &&
-          other.creditOverrideBy == this.creditOverrideBy &&
-          other.creditOverrideAt == this.creditOverrideAt &&
+          other.saleType == this.saleType &&
+          other.grossAmountPaisa == this.grossAmountPaisa &&
+          other.discountAmountPaisa == this.discountAmountPaisa &&
+          other.netAmountPaisa == this.netAmountPaisa &&
+          other.paidAmountPaisa == this.paidAmountPaisa &&
+          other.previousBalancePaisa == this.previousBalancePaisa &&
+          other.paymentStatus == this.paymentStatus &&
+          other.createdBy == this.createdBy &&
           other.createdAt == this.createdAt);
 }
 
 class SalesCompanion extends UpdateCompanion<Sale> {
   final Value<int> id;
+  final Value<int> billNumber;
   final Value<int?> customerId;
-  final Value<int> totalAmountPaisa;
-  final Value<String> paymentMode;
-  final Value<int?> creditOverrideBy;
-  final Value<DateTime?> creditOverrideAt;
+  final Value<String> saleType;
+  final Value<int> grossAmountPaisa;
+  final Value<int> discountAmountPaisa;
+  final Value<int> netAmountPaisa;
+  final Value<int> paidAmountPaisa;
+  final Value<int> previousBalancePaisa;
+  final Value<String> paymentStatus;
+  final Value<int> createdBy;
   final Value<DateTime> createdAt;
   const SalesCompanion({
     this.id = const Value.absent(),
+    this.billNumber = const Value.absent(),
     this.customerId = const Value.absent(),
-    this.totalAmountPaisa = const Value.absent(),
-    this.paymentMode = const Value.absent(),
-    this.creditOverrideBy = const Value.absent(),
-    this.creditOverrideAt = const Value.absent(),
+    this.saleType = const Value.absent(),
+    this.grossAmountPaisa = const Value.absent(),
+    this.discountAmountPaisa = const Value.absent(),
+    this.netAmountPaisa = const Value.absent(),
+    this.paidAmountPaisa = const Value.absent(),
+    this.previousBalancePaisa = const Value.absent(),
+    this.paymentStatus = const Value.absent(),
+    this.createdBy = const Value.absent(),
     this.createdAt = const Value.absent(),
   });
   SalesCompanion.insert({
     this.id = const Value.absent(),
+    required int billNumber,
     this.customerId = const Value.absent(),
-    required int totalAmountPaisa,
-    required String paymentMode,
-    this.creditOverrideBy = const Value.absent(),
-    this.creditOverrideAt = const Value.absent(),
+    required String saleType,
+    required int grossAmountPaisa,
+    this.discountAmountPaisa = const Value.absent(),
+    required int netAmountPaisa,
+    required int paidAmountPaisa,
+    this.previousBalancePaisa = const Value.absent(),
+    required String paymentStatus,
+    required int createdBy,
     this.createdAt = const Value.absent(),
-  })  : totalAmountPaisa = Value(totalAmountPaisa),
-        paymentMode = Value(paymentMode);
+  })  : billNumber = Value(billNumber),
+        saleType = Value(saleType),
+        grossAmountPaisa = Value(grossAmountPaisa),
+        netAmountPaisa = Value(netAmountPaisa),
+        paidAmountPaisa = Value(paidAmountPaisa),
+        paymentStatus = Value(paymentStatus),
+        createdBy = Value(createdBy);
   static Insertable<Sale> custom({
     Expression<int>? id,
+    Expression<int>? billNumber,
     Expression<int>? customerId,
-    Expression<int>? totalAmountPaisa,
-    Expression<String>? paymentMode,
-    Expression<int>? creditOverrideBy,
-    Expression<DateTime>? creditOverrideAt,
+    Expression<String>? saleType,
+    Expression<int>? grossAmountPaisa,
+    Expression<int>? discountAmountPaisa,
+    Expression<int>? netAmountPaisa,
+    Expression<int>? paidAmountPaisa,
+    Expression<int>? previousBalancePaisa,
+    Expression<String>? paymentStatus,
+    Expression<int>? createdBy,
     Expression<DateTime>? createdAt,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
+      if (billNumber != null) 'bill_number': billNumber,
       if (customerId != null) 'customer_id': customerId,
-      if (totalAmountPaisa != null) 'total_amount_paisa': totalAmountPaisa,
-      if (paymentMode != null) 'payment_mode': paymentMode,
-      if (creditOverrideBy != null) 'credit_override_by': creditOverrideBy,
-      if (creditOverrideAt != null) 'credit_override_at': creditOverrideAt,
+      if (saleType != null) 'sale_type': saleType,
+      if (grossAmountPaisa != null) 'gross_amount_paisa': grossAmountPaisa,
+      if (discountAmountPaisa != null)
+        'discount_amount_paisa': discountAmountPaisa,
+      if (netAmountPaisa != null) 'net_amount_paisa': netAmountPaisa,
+      if (paidAmountPaisa != null) 'paid_amount_paisa': paidAmountPaisa,
+      if (previousBalancePaisa != null)
+        'previous_balance_paisa': previousBalancePaisa,
+      if (paymentStatus != null) 'payment_status': paymentStatus,
+      if (createdBy != null) 'created_by': createdBy,
       if (createdAt != null) 'created_at': createdAt,
     });
   }
 
   SalesCompanion copyWith(
       {Value<int>? id,
+      Value<int>? billNumber,
       Value<int?>? customerId,
-      Value<int>? totalAmountPaisa,
-      Value<String>? paymentMode,
-      Value<int?>? creditOverrideBy,
-      Value<DateTime?>? creditOverrideAt,
+      Value<String>? saleType,
+      Value<int>? grossAmountPaisa,
+      Value<int>? discountAmountPaisa,
+      Value<int>? netAmountPaisa,
+      Value<int>? paidAmountPaisa,
+      Value<int>? previousBalancePaisa,
+      Value<String>? paymentStatus,
+      Value<int>? createdBy,
       Value<DateTime>? createdAt}) {
     return SalesCompanion(
       id: id ?? this.id,
+      billNumber: billNumber ?? this.billNumber,
       customerId: customerId ?? this.customerId,
-      totalAmountPaisa: totalAmountPaisa ?? this.totalAmountPaisa,
-      paymentMode: paymentMode ?? this.paymentMode,
-      creditOverrideBy: creditOverrideBy ?? this.creditOverrideBy,
-      creditOverrideAt: creditOverrideAt ?? this.creditOverrideAt,
+      saleType: saleType ?? this.saleType,
+      grossAmountPaisa: grossAmountPaisa ?? this.grossAmountPaisa,
+      discountAmountPaisa: discountAmountPaisa ?? this.discountAmountPaisa,
+      netAmountPaisa: netAmountPaisa ?? this.netAmountPaisa,
+      paidAmountPaisa: paidAmountPaisa ?? this.paidAmountPaisa,
+      previousBalancePaisa: previousBalancePaisa ?? this.previousBalancePaisa,
+      paymentStatus: paymentStatus ?? this.paymentStatus,
+      createdBy: createdBy ?? this.createdBy,
       createdAt: createdAt ?? this.createdAt,
     );
   }
@@ -3684,20 +4084,35 @@ class SalesCompanion extends UpdateCompanion<Sale> {
     if (id.present) {
       map['id'] = Variable<int>(id.value);
     }
+    if (billNumber.present) {
+      map['bill_number'] = Variable<int>(billNumber.value);
+    }
     if (customerId.present) {
       map['customer_id'] = Variable<int>(customerId.value);
     }
-    if (totalAmountPaisa.present) {
-      map['total_amount_paisa'] = Variable<int>(totalAmountPaisa.value);
+    if (saleType.present) {
+      map['sale_type'] = Variable<String>(saleType.value);
     }
-    if (paymentMode.present) {
-      map['payment_mode'] = Variable<String>(paymentMode.value);
+    if (grossAmountPaisa.present) {
+      map['gross_amount_paisa'] = Variable<int>(grossAmountPaisa.value);
     }
-    if (creditOverrideBy.present) {
-      map['credit_override_by'] = Variable<int>(creditOverrideBy.value);
+    if (discountAmountPaisa.present) {
+      map['discount_amount_paisa'] = Variable<int>(discountAmountPaisa.value);
     }
-    if (creditOverrideAt.present) {
-      map['credit_override_at'] = Variable<DateTime>(creditOverrideAt.value);
+    if (netAmountPaisa.present) {
+      map['net_amount_paisa'] = Variable<int>(netAmountPaisa.value);
+    }
+    if (paidAmountPaisa.present) {
+      map['paid_amount_paisa'] = Variable<int>(paidAmountPaisa.value);
+    }
+    if (previousBalancePaisa.present) {
+      map['previous_balance_paisa'] = Variable<int>(previousBalancePaisa.value);
+    }
+    if (paymentStatus.present) {
+      map['payment_status'] = Variable<String>(paymentStatus.value);
+    }
+    if (createdBy.present) {
+      map['created_by'] = Variable<int>(createdBy.value);
     }
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
@@ -3709,11 +4124,16 @@ class SalesCompanion extends UpdateCompanion<Sale> {
   String toString() {
     return (StringBuffer('SalesCompanion(')
           ..write('id: $id, ')
+          ..write('billNumber: $billNumber, ')
           ..write('customerId: $customerId, ')
-          ..write('totalAmountPaisa: $totalAmountPaisa, ')
-          ..write('paymentMode: $paymentMode, ')
-          ..write('creditOverrideBy: $creditOverrideBy, ')
-          ..write('creditOverrideAt: $creditOverrideAt, ')
+          ..write('saleType: $saleType, ')
+          ..write('grossAmountPaisa: $grossAmountPaisa, ')
+          ..write('discountAmountPaisa: $discountAmountPaisa, ')
+          ..write('netAmountPaisa: $netAmountPaisa, ')
+          ..write('paidAmountPaisa: $paidAmountPaisa, ')
+          ..write('previousBalancePaisa: $previousBalancePaisa, ')
+          ..write('paymentStatus: $paymentStatus, ')
+          ..write('createdBy: $createdBy, ')
           ..write('createdAt: $createdAt')
           ..write(')'))
         .toString();
@@ -3751,32 +4171,26 @@ class $SaleItemsTable extends SaleItems
       requiredDuringInsert: true,
       defaultConstraints:
           GeneratedColumn.constraintIsAlways('REFERENCES parts (id)'));
+  static const VerificationMeta _unitRatePaisaMeta =
+      const VerificationMeta('unitRatePaisa');
+  @override
+  late final GeneratedColumn<int> unitRatePaisa = GeneratedColumn<int>(
+      'unit_rate_paisa', aliasedName, false,
+      type: DriftSqlType.int, requiredDuringInsert: true);
   static const VerificationMeta _qtyMeta = const VerificationMeta('qty');
   @override
   late final GeneratedColumn<int> qty = GeneratedColumn<int>(
       'qty', aliasedName, false,
       type: DriftSqlType.int, requiredDuringInsert: true);
-  static const VerificationMeta _unitCostPaisaMeta =
-      const VerificationMeta('unitCostPaisa');
+  static const VerificationMeta _lineTotalPaisaMeta =
+      const VerificationMeta('lineTotalPaisa');
   @override
-  late final GeneratedColumn<int> unitCostPaisa = GeneratedColumn<int>(
-      'unit_cost_paisa', aliasedName, false,
+  late final GeneratedColumn<int> lineTotalPaisa = GeneratedColumn<int>(
+      'line_total_paisa', aliasedName, false,
       type: DriftSqlType.int, requiredDuringInsert: true);
-  static const VerificationMeta _pricePaisaMeta =
-      const VerificationMeta('pricePaisa');
-  @override
-  late final GeneratedColumn<int> pricePaisa = GeneratedColumn<int>(
-      'price_paisa', aliasedName, false,
-      type: DriftSqlType.int, requiredDuringInsert: true);
-  static const VerificationMeta _rateSourceMeta =
-      const VerificationMeta('rateSource');
-  @override
-  late final GeneratedColumn<String> rateSource = GeneratedColumn<String>(
-      'rate_source', aliasedName, false,
-      type: DriftSqlType.string, requiredDuringInsert: true);
   @override
   List<GeneratedColumn> get $columns =>
-      [id, saleId, partId, qty, unitCostPaisa, pricePaisa, rateSource];
+      [id, saleId, partId, unitRatePaisa, qty, lineTotalPaisa];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -3802,35 +4216,27 @@ class $SaleItemsTable extends SaleItems
     } else if (isInserting) {
       context.missing(_partIdMeta);
     }
+    if (data.containsKey('unit_rate_paisa')) {
+      context.handle(
+          _unitRatePaisaMeta,
+          unitRatePaisa.isAcceptableOrUnknown(
+              data['unit_rate_paisa']!, _unitRatePaisaMeta));
+    } else if (isInserting) {
+      context.missing(_unitRatePaisaMeta);
+    }
     if (data.containsKey('qty')) {
       context.handle(
           _qtyMeta, qty.isAcceptableOrUnknown(data['qty']!, _qtyMeta));
     } else if (isInserting) {
       context.missing(_qtyMeta);
     }
-    if (data.containsKey('unit_cost_paisa')) {
+    if (data.containsKey('line_total_paisa')) {
       context.handle(
-          _unitCostPaisaMeta,
-          unitCostPaisa.isAcceptableOrUnknown(
-              data['unit_cost_paisa']!, _unitCostPaisaMeta));
+          _lineTotalPaisaMeta,
+          lineTotalPaisa.isAcceptableOrUnknown(
+              data['line_total_paisa']!, _lineTotalPaisaMeta));
     } else if (isInserting) {
-      context.missing(_unitCostPaisaMeta);
-    }
-    if (data.containsKey('price_paisa')) {
-      context.handle(
-          _pricePaisaMeta,
-          pricePaisa.isAcceptableOrUnknown(
-              data['price_paisa']!, _pricePaisaMeta));
-    } else if (isInserting) {
-      context.missing(_pricePaisaMeta);
-    }
-    if (data.containsKey('rate_source')) {
-      context.handle(
-          _rateSourceMeta,
-          rateSource.isAcceptableOrUnknown(
-              data['rate_source']!, _rateSourceMeta));
-    } else if (isInserting) {
-      context.missing(_rateSourceMeta);
+      context.missing(_lineTotalPaisaMeta);
     }
     return context;
   }
@@ -3847,14 +4253,12 @@ class $SaleItemsTable extends SaleItems
           .read(DriftSqlType.int, data['${effectivePrefix}sale_id'])!,
       partId: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}part_id'])!,
+      unitRatePaisa: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}unit_rate_paisa'])!,
       qty: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}qty'])!,
-      unitCostPaisa: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}unit_cost_paisa'])!,
-      pricePaisa: attachedDatabase.typeMapping
-          .read(DriftSqlType.int, data['${effectivePrefix}price_paisa'])!,
-      rateSource: attachedDatabase.typeMapping
-          .read(DriftSqlType.string, data['${effectivePrefix}rate_source'])!,
+      lineTotalPaisa: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}line_total_paisa'])!,
     );
   }
 
@@ -3868,28 +4272,25 @@ class SaleItem extends DataClass implements Insertable<SaleItem> {
   final int id;
   final int saleId;
   final int partId;
+  final int unitRatePaisa;
   final int qty;
-  final int unitCostPaisa;
-  final int pricePaisa;
-  final String rateSource;
+  final int lineTotalPaisa;
   const SaleItem(
       {required this.id,
       required this.saleId,
       required this.partId,
+      required this.unitRatePaisa,
       required this.qty,
-      required this.unitCostPaisa,
-      required this.pricePaisa,
-      required this.rateSource});
+      required this.lineTotalPaisa});
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
     final map = <String, Expression>{};
     map['id'] = Variable<int>(id);
     map['sale_id'] = Variable<int>(saleId);
     map['part_id'] = Variable<int>(partId);
+    map['unit_rate_paisa'] = Variable<int>(unitRatePaisa);
     map['qty'] = Variable<int>(qty);
-    map['unit_cost_paisa'] = Variable<int>(unitCostPaisa);
-    map['price_paisa'] = Variable<int>(pricePaisa);
-    map['rate_source'] = Variable<String>(rateSource);
+    map['line_total_paisa'] = Variable<int>(lineTotalPaisa);
     return map;
   }
 
@@ -3898,10 +4299,9 @@ class SaleItem extends DataClass implements Insertable<SaleItem> {
       id: Value(id),
       saleId: Value(saleId),
       partId: Value(partId),
+      unitRatePaisa: Value(unitRatePaisa),
       qty: Value(qty),
-      unitCostPaisa: Value(unitCostPaisa),
-      pricePaisa: Value(pricePaisa),
-      rateSource: Value(rateSource),
+      lineTotalPaisa: Value(lineTotalPaisa),
     );
   }
 
@@ -3912,10 +4312,9 @@ class SaleItem extends DataClass implements Insertable<SaleItem> {
       id: serializer.fromJson<int>(json['id']),
       saleId: serializer.fromJson<int>(json['saleId']),
       partId: serializer.fromJson<int>(json['partId']),
+      unitRatePaisa: serializer.fromJson<int>(json['unitRatePaisa']),
       qty: serializer.fromJson<int>(json['qty']),
-      unitCostPaisa: serializer.fromJson<int>(json['unitCostPaisa']),
-      pricePaisa: serializer.fromJson<int>(json['pricePaisa']),
-      rateSource: serializer.fromJson<String>(json['rateSource']),
+      lineTotalPaisa: serializer.fromJson<int>(json['lineTotalPaisa']),
     );
   }
   @override
@@ -3925,10 +4324,9 @@ class SaleItem extends DataClass implements Insertable<SaleItem> {
       'id': serializer.toJson<int>(id),
       'saleId': serializer.toJson<int>(saleId),
       'partId': serializer.toJson<int>(partId),
+      'unitRatePaisa': serializer.toJson<int>(unitRatePaisa),
       'qty': serializer.toJson<int>(qty),
-      'unitCostPaisa': serializer.toJson<int>(unitCostPaisa),
-      'pricePaisa': serializer.toJson<int>(pricePaisa),
-      'rateSource': serializer.toJson<String>(rateSource),
+      'lineTotalPaisa': serializer.toJson<int>(lineTotalPaisa),
     };
   }
 
@@ -3936,32 +4334,29 @@ class SaleItem extends DataClass implements Insertable<SaleItem> {
           {int? id,
           int? saleId,
           int? partId,
+          int? unitRatePaisa,
           int? qty,
-          int? unitCostPaisa,
-          int? pricePaisa,
-          String? rateSource}) =>
+          int? lineTotalPaisa}) =>
       SaleItem(
         id: id ?? this.id,
         saleId: saleId ?? this.saleId,
         partId: partId ?? this.partId,
+        unitRatePaisa: unitRatePaisa ?? this.unitRatePaisa,
         qty: qty ?? this.qty,
-        unitCostPaisa: unitCostPaisa ?? this.unitCostPaisa,
-        pricePaisa: pricePaisa ?? this.pricePaisa,
-        rateSource: rateSource ?? this.rateSource,
+        lineTotalPaisa: lineTotalPaisa ?? this.lineTotalPaisa,
       );
   SaleItem copyWithCompanion(SaleItemsCompanion data) {
     return SaleItem(
       id: data.id.present ? data.id.value : this.id,
       saleId: data.saleId.present ? data.saleId.value : this.saleId,
       partId: data.partId.present ? data.partId.value : this.partId,
+      unitRatePaisa: data.unitRatePaisa.present
+          ? data.unitRatePaisa.value
+          : this.unitRatePaisa,
       qty: data.qty.present ? data.qty.value : this.qty,
-      unitCostPaisa: data.unitCostPaisa.present
-          ? data.unitCostPaisa.value
-          : this.unitCostPaisa,
-      pricePaisa:
-          data.pricePaisa.present ? data.pricePaisa.value : this.pricePaisa,
-      rateSource:
-          data.rateSource.present ? data.rateSource.value : this.rateSource,
+      lineTotalPaisa: data.lineTotalPaisa.present
+          ? data.lineTotalPaisa.value
+          : this.lineTotalPaisa,
     );
   }
 
@@ -3971,17 +4366,16 @@ class SaleItem extends DataClass implements Insertable<SaleItem> {
           ..write('id: $id, ')
           ..write('saleId: $saleId, ')
           ..write('partId: $partId, ')
+          ..write('unitRatePaisa: $unitRatePaisa, ')
           ..write('qty: $qty, ')
-          ..write('unitCostPaisa: $unitCostPaisa, ')
-          ..write('pricePaisa: $pricePaisa, ')
-          ..write('rateSource: $rateSource')
+          ..write('lineTotalPaisa: $lineTotalPaisa')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(
-      id, saleId, partId, qty, unitCostPaisa, pricePaisa, rateSource);
+  int get hashCode =>
+      Object.hash(id, saleId, partId, unitRatePaisa, qty, lineTotalPaisa);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -3989,60 +4383,53 @@ class SaleItem extends DataClass implements Insertable<SaleItem> {
           other.id == this.id &&
           other.saleId == this.saleId &&
           other.partId == this.partId &&
+          other.unitRatePaisa == this.unitRatePaisa &&
           other.qty == this.qty &&
-          other.unitCostPaisa == this.unitCostPaisa &&
-          other.pricePaisa == this.pricePaisa &&
-          other.rateSource == this.rateSource);
+          other.lineTotalPaisa == this.lineTotalPaisa);
 }
 
 class SaleItemsCompanion extends UpdateCompanion<SaleItem> {
   final Value<int> id;
   final Value<int> saleId;
   final Value<int> partId;
+  final Value<int> unitRatePaisa;
   final Value<int> qty;
-  final Value<int> unitCostPaisa;
-  final Value<int> pricePaisa;
-  final Value<String> rateSource;
+  final Value<int> lineTotalPaisa;
   const SaleItemsCompanion({
     this.id = const Value.absent(),
     this.saleId = const Value.absent(),
     this.partId = const Value.absent(),
+    this.unitRatePaisa = const Value.absent(),
     this.qty = const Value.absent(),
-    this.unitCostPaisa = const Value.absent(),
-    this.pricePaisa = const Value.absent(),
-    this.rateSource = const Value.absent(),
+    this.lineTotalPaisa = const Value.absent(),
   });
   SaleItemsCompanion.insert({
     this.id = const Value.absent(),
     required int saleId,
     required int partId,
+    required int unitRatePaisa,
     required int qty,
-    required int unitCostPaisa,
-    required int pricePaisa,
-    required String rateSource,
+    required int lineTotalPaisa,
   })  : saleId = Value(saleId),
         partId = Value(partId),
+        unitRatePaisa = Value(unitRatePaisa),
         qty = Value(qty),
-        unitCostPaisa = Value(unitCostPaisa),
-        pricePaisa = Value(pricePaisa),
-        rateSource = Value(rateSource);
+        lineTotalPaisa = Value(lineTotalPaisa);
   static Insertable<SaleItem> custom({
     Expression<int>? id,
     Expression<int>? saleId,
     Expression<int>? partId,
+    Expression<int>? unitRatePaisa,
     Expression<int>? qty,
-    Expression<int>? unitCostPaisa,
-    Expression<int>? pricePaisa,
-    Expression<String>? rateSource,
+    Expression<int>? lineTotalPaisa,
   }) {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (saleId != null) 'sale_id': saleId,
       if (partId != null) 'part_id': partId,
+      if (unitRatePaisa != null) 'unit_rate_paisa': unitRatePaisa,
       if (qty != null) 'qty': qty,
-      if (unitCostPaisa != null) 'unit_cost_paisa': unitCostPaisa,
-      if (pricePaisa != null) 'price_paisa': pricePaisa,
-      if (rateSource != null) 'rate_source': rateSource,
+      if (lineTotalPaisa != null) 'line_total_paisa': lineTotalPaisa,
     });
   }
 
@@ -4050,18 +4437,16 @@ class SaleItemsCompanion extends UpdateCompanion<SaleItem> {
       {Value<int>? id,
       Value<int>? saleId,
       Value<int>? partId,
+      Value<int>? unitRatePaisa,
       Value<int>? qty,
-      Value<int>? unitCostPaisa,
-      Value<int>? pricePaisa,
-      Value<String>? rateSource}) {
+      Value<int>? lineTotalPaisa}) {
     return SaleItemsCompanion(
       id: id ?? this.id,
       saleId: saleId ?? this.saleId,
       partId: partId ?? this.partId,
+      unitRatePaisa: unitRatePaisa ?? this.unitRatePaisa,
       qty: qty ?? this.qty,
-      unitCostPaisa: unitCostPaisa ?? this.unitCostPaisa,
-      pricePaisa: pricePaisa ?? this.pricePaisa,
-      rateSource: rateSource ?? this.rateSource,
+      lineTotalPaisa: lineTotalPaisa ?? this.lineTotalPaisa,
     );
   }
 
@@ -4077,17 +4462,14 @@ class SaleItemsCompanion extends UpdateCompanion<SaleItem> {
     if (partId.present) {
       map['part_id'] = Variable<int>(partId.value);
     }
+    if (unitRatePaisa.present) {
+      map['unit_rate_paisa'] = Variable<int>(unitRatePaisa.value);
+    }
     if (qty.present) {
       map['qty'] = Variable<int>(qty.value);
     }
-    if (unitCostPaisa.present) {
-      map['unit_cost_paisa'] = Variable<int>(unitCostPaisa.value);
-    }
-    if (pricePaisa.present) {
-      map['price_paisa'] = Variable<int>(pricePaisa.value);
-    }
-    if (rateSource.present) {
-      map['rate_source'] = Variable<String>(rateSource.value);
+    if (lineTotalPaisa.present) {
+      map['line_total_paisa'] = Variable<int>(lineTotalPaisa.value);
     }
     return map;
   }
@@ -4098,10 +4480,9 @@ class SaleItemsCompanion extends UpdateCompanion<SaleItem> {
           ..write('id: $id, ')
           ..write('saleId: $saleId, ')
           ..write('partId: $partId, ')
+          ..write('unitRatePaisa: $unitRatePaisa, ')
           ..write('qty: $qty, ')
-          ..write('unitCostPaisa: $unitCostPaisa, ')
-          ..write('pricePaisa: $pricePaisa, ')
-          ..write('rateSource: $rateSource')
+          ..write('lineTotalPaisa: $lineTotalPaisa')
           ..write(')'))
         .toString();
   }
@@ -5525,11 +5906,11 @@ final class $$UsersTableReferences
   static MultiTypedResultKey<$SalesTable, List<Sale>> _salesRefsTable(
           _$AppDatabase db) =>
       MultiTypedResultKey.fromTable(db.sales,
-          aliasName: 'users__id__sales__credit_override_by');
+          aliasName: 'users__id__sales__created_by');
 
   $$SalesTableProcessedTableManager get salesRefs {
-    final manager = $$SalesTableTableManager($_db, $_db.sales).filter(
-        (f) => f.creditOverrideBy.id.sqlEquals($_itemColumn<int>('id')!));
+    final manager = $$SalesTableTableManager($_db, $_db.sales)
+        .filter((f) => f.createdBy.id.sqlEquals($_itemColumn<int>('id')!));
 
     final cache = $_typedResult.readTableOrNull(_salesRefsTable($_db));
     return ProcessedTableManager(
@@ -5655,7 +6036,7 @@ class $$UsersTableFilterComposer extends Composer<_$AppDatabase, $UsersTable> {
         composer: this,
         getCurrentColumn: (t) => t.id,
         referencedTable: $db.sales,
-        getReferencedColumn: (t) => t.creditOverrideBy,
+        getReferencedColumn: (t) => t.createdBy,
         builder: (joinBuilder,
                 {$addJoinBuilderToRootComposer,
                 $removeJoinBuilderFromRootComposer}) =>
@@ -5848,7 +6229,7 @@ class $$UsersTableAnnotationComposer
         composer: this,
         getCurrentColumn: (t) => t.id,
         referencedTable: $db.sales,
-        getReferencedColumn: (t) => t.creditOverrideBy,
+        getReferencedColumn: (t) => t.createdBy,
         builder: (joinBuilder,
                 {$addJoinBuilderToRootComposer,
                 $removeJoinBuilderFromRootComposer}) =>
@@ -6041,7 +6422,7 @@ class $$UsersTableTableManager extends RootTableManager<
                             $$UsersTableReferences(db, table, p0).salesRefs,
                         referencedItemsForCurrentItem:
                             (item, referencedItems) => referencedItems
-                                .where((e) => e.creditOverrideBy == item.id),
+                                .where((e) => e.createdBy == item.id),
                         typedResults: items),
                   if (expensesRefs)
                     await $_getPrefetchedData<User, $UsersTable, Expense>(
@@ -7810,14 +8191,20 @@ typedef $$StockMovementsTableProcessedTableManager = ProcessedTableManager<
 typedef $$CustomersTableCreateCompanionBuilder = CustomersCompanion Function({
   Value<int> id,
   required String name,
+  Value<String?> shopName,
   Value<String?> phone,
+  Value<String?> address,
+  Value<String> customerType,
   Value<int?> creditLimitPaisa,
   Value<int> currentBalancePaisa,
 });
 typedef $$CustomersTableUpdateCompanionBuilder = CustomersCompanion Function({
   Value<int> id,
   Value<String> name,
+  Value<String?> shopName,
   Value<String?> phone,
+  Value<String?> address,
+  Value<String> customerType,
   Value<int?> creditLimitPaisa,
   Value<int> currentBalancePaisa,
 });
@@ -7874,8 +8261,17 @@ class $$CustomersTableFilterComposer
   ColumnFilters<String> get name => $composableBuilder(
       column: $table.name, builder: (column) => ColumnFilters(column));
 
+  ColumnFilters<String> get shopName => $composableBuilder(
+      column: $table.shopName, builder: (column) => ColumnFilters(column));
+
   ColumnFilters<String> get phone => $composableBuilder(
       column: $table.phone, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get address => $composableBuilder(
+      column: $table.address, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get customerType => $composableBuilder(
+      column: $table.customerType, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<int> get creditLimitPaisa => $composableBuilder(
       column: $table.creditLimitPaisa,
@@ -7945,8 +8341,18 @@ class $$CustomersTableOrderingComposer
   ColumnOrderings<String> get name => $composableBuilder(
       column: $table.name, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<String> get shopName => $composableBuilder(
+      column: $table.shopName, builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<String> get phone => $composableBuilder(
       column: $table.phone, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get address => $composableBuilder(
+      column: $table.address, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get customerType => $composableBuilder(
+      column: $table.customerType,
+      builder: (column) => ColumnOrderings(column));
 
   ColumnOrderings<int> get creditLimitPaisa => $composableBuilder(
       column: $table.creditLimitPaisa,
@@ -7972,8 +8378,17 @@ class $$CustomersTableAnnotationComposer
   GeneratedColumn<String> get name =>
       $composableBuilder(column: $table.name, builder: (column) => column);
 
+  GeneratedColumn<String> get shopName =>
+      $composableBuilder(column: $table.shopName, builder: (column) => column);
+
   GeneratedColumn<String> get phone =>
       $composableBuilder(column: $table.phone, builder: (column) => column);
+
+  GeneratedColumn<String> get address =>
+      $composableBuilder(column: $table.address, builder: (column) => column);
+
+  GeneratedColumn<String> get customerType => $composableBuilder(
+      column: $table.customerType, builder: (column) => column);
 
   GeneratedColumn<int> get creditLimitPaisa => $composableBuilder(
       column: $table.creditLimitPaisa, builder: (column) => column);
@@ -8051,28 +8466,40 @@ class $$CustomersTableTableManager extends RootTableManager<
           updateCompanionCallback: ({
             Value<int> id = const Value.absent(),
             Value<String> name = const Value.absent(),
+            Value<String?> shopName = const Value.absent(),
             Value<String?> phone = const Value.absent(),
+            Value<String?> address = const Value.absent(),
+            Value<String> customerType = const Value.absent(),
             Value<int?> creditLimitPaisa = const Value.absent(),
             Value<int> currentBalancePaisa = const Value.absent(),
           }) =>
               CustomersCompanion(
             id: id,
             name: name,
+            shopName: shopName,
             phone: phone,
+            address: address,
+            customerType: customerType,
             creditLimitPaisa: creditLimitPaisa,
             currentBalancePaisa: currentBalancePaisa,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
             required String name,
+            Value<String?> shopName = const Value.absent(),
             Value<String?> phone = const Value.absent(),
+            Value<String?> address = const Value.absent(),
+            Value<String> customerType = const Value.absent(),
             Value<int?> creditLimitPaisa = const Value.absent(),
             Value<int> currentBalancePaisa = const Value.absent(),
           }) =>
               CustomersCompanion.insert(
             id: id,
             name: name,
+            shopName: shopName,
             phone: phone,
+            address: address,
+            customerType: customerType,
             creditLimitPaisa: creditLimitPaisa,
             currentBalancePaisa: currentBalancePaisa,
           ),
@@ -8140,20 +8567,24 @@ typedef $$CustomerLedgerEntriesTableCreateCompanionBuilder
     = CustomerLedgerEntriesCompanion Function({
   Value<int> id,
   required int customerId,
-  required int amountPaisa,
+  Value<int?> invoiceId,
   required String entryType,
-  Value<int?> returnClaimId,
-  Value<int?> paymentId,
+  Value<int> debitAmountPaisa,
+  Value<int> creditAmountPaisa,
+  required int runningBalancePaisa,
+  Value<String?> notes,
   Value<DateTime> createdAt,
 });
 typedef $$CustomerLedgerEntriesTableUpdateCompanionBuilder
     = CustomerLedgerEntriesCompanion Function({
   Value<int> id,
   Value<int> customerId,
-  Value<int> amountPaisa,
+  Value<int?> invoiceId,
   Value<String> entryType,
-  Value<int?> returnClaimId,
-  Value<int?> paymentId,
+  Value<int> debitAmountPaisa,
+  Value<int> creditAmountPaisa,
+  Value<int> runningBalancePaisa,
+  Value<String?> notes,
   Value<DateTime> createdAt,
 });
 
@@ -8189,17 +8620,26 @@ class $$CustomerLedgerEntriesTableFilterComposer
   ColumnFilters<int> get id => $composableBuilder(
       column: $table.id, builder: (column) => ColumnFilters(column));
 
-  ColumnFilters<int> get amountPaisa => $composableBuilder(
-      column: $table.amountPaisa, builder: (column) => ColumnFilters(column));
+  ColumnFilters<int> get invoiceId => $composableBuilder(
+      column: $table.invoiceId, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<String> get entryType => $composableBuilder(
       column: $table.entryType, builder: (column) => ColumnFilters(column));
 
-  ColumnFilters<int> get returnClaimId => $composableBuilder(
-      column: $table.returnClaimId, builder: (column) => ColumnFilters(column));
+  ColumnFilters<int> get debitAmountPaisa => $composableBuilder(
+      column: $table.debitAmountPaisa,
+      builder: (column) => ColumnFilters(column));
 
-  ColumnFilters<int> get paymentId => $composableBuilder(
-      column: $table.paymentId, builder: (column) => ColumnFilters(column));
+  ColumnFilters<int> get creditAmountPaisa => $composableBuilder(
+      column: $table.creditAmountPaisa,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get runningBalancePaisa => $composableBuilder(
+      column: $table.runningBalancePaisa,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get notes => $composableBuilder(
+      column: $table.notes, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnFilters(column));
@@ -8237,18 +8677,26 @@ class $$CustomerLedgerEntriesTableOrderingComposer
   ColumnOrderings<int> get id => $composableBuilder(
       column: $table.id, builder: (column) => ColumnOrderings(column));
 
-  ColumnOrderings<int> get amountPaisa => $composableBuilder(
-      column: $table.amountPaisa, builder: (column) => ColumnOrderings(column));
+  ColumnOrderings<int> get invoiceId => $composableBuilder(
+      column: $table.invoiceId, builder: (column) => ColumnOrderings(column));
 
   ColumnOrderings<String> get entryType => $composableBuilder(
       column: $table.entryType, builder: (column) => ColumnOrderings(column));
 
-  ColumnOrderings<int> get returnClaimId => $composableBuilder(
-      column: $table.returnClaimId,
+  ColumnOrderings<int> get debitAmountPaisa => $composableBuilder(
+      column: $table.debitAmountPaisa,
       builder: (column) => ColumnOrderings(column));
 
-  ColumnOrderings<int> get paymentId => $composableBuilder(
-      column: $table.paymentId, builder: (column) => ColumnOrderings(column));
+  ColumnOrderings<int> get creditAmountPaisa => $composableBuilder(
+      column: $table.creditAmountPaisa,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get runningBalancePaisa => $composableBuilder(
+      column: $table.runningBalancePaisa,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get notes => $composableBuilder(
+      column: $table.notes, builder: (column) => ColumnOrderings(column));
 
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnOrderings(column));
@@ -8286,17 +8734,23 @@ class $$CustomerLedgerEntriesTableAnnotationComposer
   GeneratedColumn<int> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
-  GeneratedColumn<int> get amountPaisa => $composableBuilder(
-      column: $table.amountPaisa, builder: (column) => column);
+  GeneratedColumn<int> get invoiceId =>
+      $composableBuilder(column: $table.invoiceId, builder: (column) => column);
 
   GeneratedColumn<String> get entryType =>
       $composableBuilder(column: $table.entryType, builder: (column) => column);
 
-  GeneratedColumn<int> get returnClaimId => $composableBuilder(
-      column: $table.returnClaimId, builder: (column) => column);
+  GeneratedColumn<int> get debitAmountPaisa => $composableBuilder(
+      column: $table.debitAmountPaisa, builder: (column) => column);
 
-  GeneratedColumn<int> get paymentId =>
-      $composableBuilder(column: $table.paymentId, builder: (column) => column);
+  GeneratedColumn<int> get creditAmountPaisa => $composableBuilder(
+      column: $table.creditAmountPaisa, builder: (column) => column);
+
+  GeneratedColumn<int> get runningBalancePaisa => $composableBuilder(
+      column: $table.runningBalancePaisa, builder: (column) => column);
+
+  GeneratedColumn<String> get notes =>
+      $composableBuilder(column: $table.notes, builder: (column) => column);
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -8351,37 +8805,45 @@ class $$CustomerLedgerEntriesTableTableManager extends RootTableManager<
           updateCompanionCallback: ({
             Value<int> id = const Value.absent(),
             Value<int> customerId = const Value.absent(),
-            Value<int> amountPaisa = const Value.absent(),
+            Value<int?> invoiceId = const Value.absent(),
             Value<String> entryType = const Value.absent(),
-            Value<int?> returnClaimId = const Value.absent(),
-            Value<int?> paymentId = const Value.absent(),
+            Value<int> debitAmountPaisa = const Value.absent(),
+            Value<int> creditAmountPaisa = const Value.absent(),
+            Value<int> runningBalancePaisa = const Value.absent(),
+            Value<String?> notes = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
           }) =>
               CustomerLedgerEntriesCompanion(
             id: id,
             customerId: customerId,
-            amountPaisa: amountPaisa,
+            invoiceId: invoiceId,
             entryType: entryType,
-            returnClaimId: returnClaimId,
-            paymentId: paymentId,
+            debitAmountPaisa: debitAmountPaisa,
+            creditAmountPaisa: creditAmountPaisa,
+            runningBalancePaisa: runningBalancePaisa,
+            notes: notes,
             createdAt: createdAt,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
             required int customerId,
-            required int amountPaisa,
+            Value<int?> invoiceId = const Value.absent(),
             required String entryType,
-            Value<int?> returnClaimId = const Value.absent(),
-            Value<int?> paymentId = const Value.absent(),
+            Value<int> debitAmountPaisa = const Value.absent(),
+            Value<int> creditAmountPaisa = const Value.absent(),
+            required int runningBalancePaisa,
+            Value<String?> notes = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
           }) =>
               CustomerLedgerEntriesCompanion.insert(
             id: id,
             customerId: customerId,
-            amountPaisa: amountPaisa,
+            invoiceId: invoiceId,
             entryType: entryType,
-            returnClaimId: returnClaimId,
-            paymentId: paymentId,
+            debitAmountPaisa: debitAmountPaisa,
+            creditAmountPaisa: creditAmountPaisa,
+            runningBalancePaisa: runningBalancePaisa,
+            notes: notes,
             createdAt: createdAt,
           ),
           withReferenceMapper: (p0) => p0
@@ -8445,20 +8907,30 @@ typedef $$CustomerLedgerEntriesTableProcessedTableManager
         PrefetchHooks Function({bool customerId})>;
 typedef $$SalesTableCreateCompanionBuilder = SalesCompanion Function({
   Value<int> id,
+  required int billNumber,
   Value<int?> customerId,
-  required int totalAmountPaisa,
-  required String paymentMode,
-  Value<int?> creditOverrideBy,
-  Value<DateTime?> creditOverrideAt,
+  required String saleType,
+  required int grossAmountPaisa,
+  Value<int> discountAmountPaisa,
+  required int netAmountPaisa,
+  required int paidAmountPaisa,
+  Value<int> previousBalancePaisa,
+  required String paymentStatus,
+  required int createdBy,
   Value<DateTime> createdAt,
 });
 typedef $$SalesTableUpdateCompanionBuilder = SalesCompanion Function({
   Value<int> id,
+  Value<int> billNumber,
   Value<int?> customerId,
-  Value<int> totalAmountPaisa,
-  Value<String> paymentMode,
-  Value<int?> creditOverrideBy,
-  Value<DateTime?> creditOverrideAt,
+  Value<String> saleType,
+  Value<int> grossAmountPaisa,
+  Value<int> discountAmountPaisa,
+  Value<int> netAmountPaisa,
+  Value<int> paidAmountPaisa,
+  Value<int> previousBalancePaisa,
+  Value<String> paymentStatus,
+  Value<int> createdBy,
   Value<DateTime> createdAt,
 });
 
@@ -8480,15 +8952,15 @@ final class $$SalesTableReferences
         manager.$state.copyWith(prefetchedData: [item]));
   }
 
-  static $UsersTable _creditOverrideByTable(_$AppDatabase db) =>
-      db.users.createAlias('sales__credit_override_by__users__id');
+  static $UsersTable _createdByTable(_$AppDatabase db) =>
+      db.users.createAlias('sales__created_by__users__id');
 
-  $$UsersTableProcessedTableManager? get creditOverrideBy {
-    final $_column = $_itemColumn<int>('credit_override_by');
-    if ($_column == null) return null;
+  $$UsersTableProcessedTableManager get createdBy {
+    final $_column = $_itemColumn<int>('created_by')!;
+
     final manager = $$UsersTableTableManager($_db, $_db.users)
         .filter((f) => f.id.sqlEquals($_column));
-    final item = $_typedResult.readTableOrNull(_creditOverrideByTable($_db));
+    final item = $_typedResult.readTableOrNull(_createdByTable($_db));
     if (item == null) return manager;
     return ProcessedTableManager(
         manager.$state.copyWith(prefetchedData: [item]));
@@ -8520,16 +8992,34 @@ class $$SalesTableFilterComposer extends Composer<_$AppDatabase, $SalesTable> {
   ColumnFilters<int> get id => $composableBuilder(
       column: $table.id, builder: (column) => ColumnFilters(column));
 
-  ColumnFilters<int> get totalAmountPaisa => $composableBuilder(
-      column: $table.totalAmountPaisa,
+  ColumnFilters<int> get billNumber => $composableBuilder(
+      column: $table.billNumber, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get saleType => $composableBuilder(
+      column: $table.saleType, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get grossAmountPaisa => $composableBuilder(
+      column: $table.grossAmountPaisa,
       builder: (column) => ColumnFilters(column));
 
-  ColumnFilters<String> get paymentMode => $composableBuilder(
-      column: $table.paymentMode, builder: (column) => ColumnFilters(column));
-
-  ColumnFilters<DateTime> get creditOverrideAt => $composableBuilder(
-      column: $table.creditOverrideAt,
+  ColumnFilters<int> get discountAmountPaisa => $composableBuilder(
+      column: $table.discountAmountPaisa,
       builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get netAmountPaisa => $composableBuilder(
+      column: $table.netAmountPaisa,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get paidAmountPaisa => $composableBuilder(
+      column: $table.paidAmountPaisa,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<int> get previousBalancePaisa => $composableBuilder(
+      column: $table.previousBalancePaisa,
+      builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get paymentStatus => $composableBuilder(
+      column: $table.paymentStatus, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
       column: $table.createdAt, builder: (column) => ColumnFilters(column));
@@ -8554,10 +9044,10 @@ class $$SalesTableFilterComposer extends Composer<_$AppDatabase, $SalesTable> {
     return composer;
   }
 
-  $$UsersTableFilterComposer get creditOverrideBy {
+  $$UsersTableFilterComposer get createdBy {
     final $$UsersTableFilterComposer composer = $composerBuilder(
         composer: this,
-        getCurrentColumn: (t) => t.creditOverrideBy,
+        getCurrentColumn: (t) => t.createdBy,
         referencedTable: $db.users,
         getReferencedColumn: (t) => t.id,
         builder: (joinBuilder,
@@ -8608,15 +9098,34 @@ class $$SalesTableOrderingComposer
   ColumnOrderings<int> get id => $composableBuilder(
       column: $table.id, builder: (column) => ColumnOrderings(column));
 
-  ColumnOrderings<int> get totalAmountPaisa => $composableBuilder(
-      column: $table.totalAmountPaisa,
+  ColumnOrderings<int> get billNumber => $composableBuilder(
+      column: $table.billNumber, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get saleType => $composableBuilder(
+      column: $table.saleType, builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get grossAmountPaisa => $composableBuilder(
+      column: $table.grossAmountPaisa,
       builder: (column) => ColumnOrderings(column));
 
-  ColumnOrderings<String> get paymentMode => $composableBuilder(
-      column: $table.paymentMode, builder: (column) => ColumnOrderings(column));
+  ColumnOrderings<int> get discountAmountPaisa => $composableBuilder(
+      column: $table.discountAmountPaisa,
+      builder: (column) => ColumnOrderings(column));
 
-  ColumnOrderings<DateTime> get creditOverrideAt => $composableBuilder(
-      column: $table.creditOverrideAt,
+  ColumnOrderings<int> get netAmountPaisa => $composableBuilder(
+      column: $table.netAmountPaisa,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get paidAmountPaisa => $composableBuilder(
+      column: $table.paidAmountPaisa,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<int> get previousBalancePaisa => $composableBuilder(
+      column: $table.previousBalancePaisa,
+      builder: (column) => ColumnOrderings(column));
+
+  ColumnOrderings<String> get paymentStatus => $composableBuilder(
+      column: $table.paymentStatus,
       builder: (column) => ColumnOrderings(column));
 
   ColumnOrderings<DateTime> get createdAt => $composableBuilder(
@@ -8642,10 +9151,10 @@ class $$SalesTableOrderingComposer
     return composer;
   }
 
-  $$UsersTableOrderingComposer get creditOverrideBy {
+  $$UsersTableOrderingComposer get createdBy {
     final $$UsersTableOrderingComposer composer = $composerBuilder(
         composer: this,
-        getCurrentColumn: (t) => t.creditOverrideBy,
+        getCurrentColumn: (t) => t.createdBy,
         referencedTable: $db.users,
         getReferencedColumn: (t) => t.id,
         builder: (joinBuilder,
@@ -8675,14 +9184,29 @@ class $$SalesTableAnnotationComposer
   GeneratedColumn<int> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
-  GeneratedColumn<int> get totalAmountPaisa => $composableBuilder(
-      column: $table.totalAmountPaisa, builder: (column) => column);
+  GeneratedColumn<int> get billNumber => $composableBuilder(
+      column: $table.billNumber, builder: (column) => column);
 
-  GeneratedColumn<String> get paymentMode => $composableBuilder(
-      column: $table.paymentMode, builder: (column) => column);
+  GeneratedColumn<String> get saleType =>
+      $composableBuilder(column: $table.saleType, builder: (column) => column);
 
-  GeneratedColumn<DateTime> get creditOverrideAt => $composableBuilder(
-      column: $table.creditOverrideAt, builder: (column) => column);
+  GeneratedColumn<int> get grossAmountPaisa => $composableBuilder(
+      column: $table.grossAmountPaisa, builder: (column) => column);
+
+  GeneratedColumn<int> get discountAmountPaisa => $composableBuilder(
+      column: $table.discountAmountPaisa, builder: (column) => column);
+
+  GeneratedColumn<int> get netAmountPaisa => $composableBuilder(
+      column: $table.netAmountPaisa, builder: (column) => column);
+
+  GeneratedColumn<int> get paidAmountPaisa => $composableBuilder(
+      column: $table.paidAmountPaisa, builder: (column) => column);
+
+  GeneratedColumn<int> get previousBalancePaisa => $composableBuilder(
+      column: $table.previousBalancePaisa, builder: (column) => column);
+
+  GeneratedColumn<String> get paymentStatus => $composableBuilder(
+      column: $table.paymentStatus, builder: (column) => column);
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
@@ -8707,10 +9231,10 @@ class $$SalesTableAnnotationComposer
     return composer;
   }
 
-  $$UsersTableAnnotationComposer get creditOverrideBy {
+  $$UsersTableAnnotationComposer get createdBy {
     final $$UsersTableAnnotationComposer composer = $composerBuilder(
         composer: this,
-        getCurrentColumn: (t) => t.creditOverrideBy,
+        getCurrentColumn: (t) => t.createdBy,
         referencedTable: $db.users,
         getReferencedColumn: (t) => t.id,
         builder: (joinBuilder,
@@ -8761,7 +9285,7 @@ class $$SalesTableTableManager extends RootTableManager<
     (Sale, $$SalesTableReferences),
     Sale,
     PrefetchHooks Function(
-        {bool customerId, bool creditOverrideBy, bool saleItemsRefs})> {
+        {bool customerId, bool createdBy, bool saleItemsRefs})> {
   $$SalesTableTableManager(_$AppDatabase db, $SalesTable table)
       : super(TableManagerState(
           db: db,
@@ -8774,38 +9298,58 @@ class $$SalesTableTableManager extends RootTableManager<
               $$SalesTableAnnotationComposer($db: db, $table: table),
           updateCompanionCallback: ({
             Value<int> id = const Value.absent(),
+            Value<int> billNumber = const Value.absent(),
             Value<int?> customerId = const Value.absent(),
-            Value<int> totalAmountPaisa = const Value.absent(),
-            Value<String> paymentMode = const Value.absent(),
-            Value<int?> creditOverrideBy = const Value.absent(),
-            Value<DateTime?> creditOverrideAt = const Value.absent(),
+            Value<String> saleType = const Value.absent(),
+            Value<int> grossAmountPaisa = const Value.absent(),
+            Value<int> discountAmountPaisa = const Value.absent(),
+            Value<int> netAmountPaisa = const Value.absent(),
+            Value<int> paidAmountPaisa = const Value.absent(),
+            Value<int> previousBalancePaisa = const Value.absent(),
+            Value<String> paymentStatus = const Value.absent(),
+            Value<int> createdBy = const Value.absent(),
             Value<DateTime> createdAt = const Value.absent(),
           }) =>
               SalesCompanion(
             id: id,
+            billNumber: billNumber,
             customerId: customerId,
-            totalAmountPaisa: totalAmountPaisa,
-            paymentMode: paymentMode,
-            creditOverrideBy: creditOverrideBy,
-            creditOverrideAt: creditOverrideAt,
+            saleType: saleType,
+            grossAmountPaisa: grossAmountPaisa,
+            discountAmountPaisa: discountAmountPaisa,
+            netAmountPaisa: netAmountPaisa,
+            paidAmountPaisa: paidAmountPaisa,
+            previousBalancePaisa: previousBalancePaisa,
+            paymentStatus: paymentStatus,
+            createdBy: createdBy,
             createdAt: createdAt,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
+            required int billNumber,
             Value<int?> customerId = const Value.absent(),
-            required int totalAmountPaisa,
-            required String paymentMode,
-            Value<int?> creditOverrideBy = const Value.absent(),
-            Value<DateTime?> creditOverrideAt = const Value.absent(),
+            required String saleType,
+            required int grossAmountPaisa,
+            Value<int> discountAmountPaisa = const Value.absent(),
+            required int netAmountPaisa,
+            required int paidAmountPaisa,
+            Value<int> previousBalancePaisa = const Value.absent(),
+            required String paymentStatus,
+            required int createdBy,
             Value<DateTime> createdAt = const Value.absent(),
           }) =>
               SalesCompanion.insert(
             id: id,
+            billNumber: billNumber,
             customerId: customerId,
-            totalAmountPaisa: totalAmountPaisa,
-            paymentMode: paymentMode,
-            creditOverrideBy: creditOverrideBy,
-            creditOverrideAt: creditOverrideAt,
+            saleType: saleType,
+            grossAmountPaisa: grossAmountPaisa,
+            discountAmountPaisa: discountAmountPaisa,
+            netAmountPaisa: netAmountPaisa,
+            paidAmountPaisa: paidAmountPaisa,
+            previousBalancePaisa: previousBalancePaisa,
+            paymentStatus: paymentStatus,
+            createdBy: createdBy,
             createdAt: createdAt,
           ),
           withReferenceMapper: (p0) => p0
@@ -8815,9 +9359,7 @@ class $$SalesTableTableManager extends RootTableManager<
                   ))
               .toList(),
           prefetchHooksCallback: (
-              {customerId = false,
-              creditOverrideBy = false,
-              saleItemsRefs = false}) {
+              {customerId = false, createdBy = false, saleItemsRefs = false}) {
             return PrefetchHooks(
               db: db,
               explicitlyWatchedTables: [if (saleItemsRefs) db.saleItems],
@@ -8844,14 +9386,13 @@ class $$SalesTableTableManager extends RootTableManager<
                         $$SalesTableReferences._customerIdTable(db).id,
                   ) as T;
                 }
-                if (creditOverrideBy) {
+                if (createdBy) {
                   state = state.withJoin(
                     currentTable: table,
-                    currentColumn: table.creditOverrideBy,
-                    referencedTable:
-                        $$SalesTableReferences._creditOverrideByTable(db),
+                    currentColumn: table.createdBy,
+                    referencedTable: $$SalesTableReferences._createdByTable(db),
                     referencedColumn:
-                        $$SalesTableReferences._creditOverrideByTable(db).id,
+                        $$SalesTableReferences._createdByTable(db).id,
                   ) as T;
                 }
 
@@ -8889,24 +9430,22 @@ typedef $$SalesTableProcessedTableManager = ProcessedTableManager<
     (Sale, $$SalesTableReferences),
     Sale,
     PrefetchHooks Function(
-        {bool customerId, bool creditOverrideBy, bool saleItemsRefs})>;
+        {bool customerId, bool createdBy, bool saleItemsRefs})>;
 typedef $$SaleItemsTableCreateCompanionBuilder = SaleItemsCompanion Function({
   Value<int> id,
   required int saleId,
   required int partId,
+  required int unitRatePaisa,
   required int qty,
-  required int unitCostPaisa,
-  required int pricePaisa,
-  required String rateSource,
+  required int lineTotalPaisa,
 });
 typedef $$SaleItemsTableUpdateCompanionBuilder = SaleItemsCompanion Function({
   Value<int> id,
   Value<int> saleId,
   Value<int> partId,
+  Value<int> unitRatePaisa,
   Value<int> qty,
-  Value<int> unitCostPaisa,
-  Value<int> pricePaisa,
-  Value<String> rateSource,
+  Value<int> lineTotalPaisa,
 });
 
 final class $$SaleItemsTableReferences
@@ -8954,17 +9493,15 @@ class $$SaleItemsTableFilterComposer
   ColumnFilters<int> get id => $composableBuilder(
       column: $table.id, builder: (column) => ColumnFilters(column));
 
+  ColumnFilters<int> get unitRatePaisa => $composableBuilder(
+      column: $table.unitRatePaisa, builder: (column) => ColumnFilters(column));
+
   ColumnFilters<int> get qty => $composableBuilder(
       column: $table.qty, builder: (column) => ColumnFilters(column));
 
-  ColumnFilters<int> get unitCostPaisa => $composableBuilder(
-      column: $table.unitCostPaisa, builder: (column) => ColumnFilters(column));
-
-  ColumnFilters<int> get pricePaisa => $composableBuilder(
-      column: $table.pricePaisa, builder: (column) => ColumnFilters(column));
-
-  ColumnFilters<String> get rateSource => $composableBuilder(
-      column: $table.rateSource, builder: (column) => ColumnFilters(column));
+  ColumnFilters<int> get lineTotalPaisa => $composableBuilder(
+      column: $table.lineTotalPaisa,
+      builder: (column) => ColumnFilters(column));
 
   $$SalesTableFilterComposer get saleId {
     final $$SalesTableFilterComposer composer = $composerBuilder(
@@ -9019,18 +9556,16 @@ class $$SaleItemsTableOrderingComposer
   ColumnOrderings<int> get id => $composableBuilder(
       column: $table.id, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<int> get unitRatePaisa => $composableBuilder(
+      column: $table.unitRatePaisa,
+      builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<int> get qty => $composableBuilder(
       column: $table.qty, builder: (column) => ColumnOrderings(column));
 
-  ColumnOrderings<int> get unitCostPaisa => $composableBuilder(
-      column: $table.unitCostPaisa,
+  ColumnOrderings<int> get lineTotalPaisa => $composableBuilder(
+      column: $table.lineTotalPaisa,
       builder: (column) => ColumnOrderings(column));
-
-  ColumnOrderings<int> get pricePaisa => $composableBuilder(
-      column: $table.pricePaisa, builder: (column) => ColumnOrderings(column));
-
-  ColumnOrderings<String> get rateSource => $composableBuilder(
-      column: $table.rateSource, builder: (column) => ColumnOrderings(column));
 
   $$SalesTableOrderingComposer get saleId {
     final $$SalesTableOrderingComposer composer = $composerBuilder(
@@ -9085,17 +9620,14 @@ class $$SaleItemsTableAnnotationComposer
   GeneratedColumn<int> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
 
+  GeneratedColumn<int> get unitRatePaisa => $composableBuilder(
+      column: $table.unitRatePaisa, builder: (column) => column);
+
   GeneratedColumn<int> get qty =>
       $composableBuilder(column: $table.qty, builder: (column) => column);
 
-  GeneratedColumn<int> get unitCostPaisa => $composableBuilder(
-      column: $table.unitCostPaisa, builder: (column) => column);
-
-  GeneratedColumn<int> get pricePaisa => $composableBuilder(
-      column: $table.pricePaisa, builder: (column) => column);
-
-  GeneratedColumn<String> get rateSource => $composableBuilder(
-      column: $table.rateSource, builder: (column) => column);
+  GeneratedColumn<int> get lineTotalPaisa => $composableBuilder(
+      column: $table.lineTotalPaisa, builder: (column) => column);
 
   $$SalesTableAnnotationComposer get saleId {
     final $$SalesTableAnnotationComposer composer = $composerBuilder(
@@ -9164,37 +9696,33 @@ class $$SaleItemsTableTableManager extends RootTableManager<
             Value<int> id = const Value.absent(),
             Value<int> saleId = const Value.absent(),
             Value<int> partId = const Value.absent(),
+            Value<int> unitRatePaisa = const Value.absent(),
             Value<int> qty = const Value.absent(),
-            Value<int> unitCostPaisa = const Value.absent(),
-            Value<int> pricePaisa = const Value.absent(),
-            Value<String> rateSource = const Value.absent(),
+            Value<int> lineTotalPaisa = const Value.absent(),
           }) =>
               SaleItemsCompanion(
             id: id,
             saleId: saleId,
             partId: partId,
+            unitRatePaisa: unitRatePaisa,
             qty: qty,
-            unitCostPaisa: unitCostPaisa,
-            pricePaisa: pricePaisa,
-            rateSource: rateSource,
+            lineTotalPaisa: lineTotalPaisa,
           ),
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
             required int saleId,
             required int partId,
+            required int unitRatePaisa,
             required int qty,
-            required int unitCostPaisa,
-            required int pricePaisa,
-            required String rateSource,
+            required int lineTotalPaisa,
           }) =>
               SaleItemsCompanion.insert(
             id: id,
             saleId: saleId,
             partId: partId,
+            unitRatePaisa: unitRatePaisa,
             qty: qty,
-            unitCostPaisa: unitCostPaisa,
-            pricePaisa: pricePaisa,
-            rateSource: rateSource,
+            lineTotalPaisa: lineTotalPaisa,
           ),
           withReferenceMapper: (p0) => p0
               .map((e) => (

@@ -51,28 +51,40 @@ class StockMovements extends Table {
 class Customers extends Table {
   IntColumn get id => integer().autoIncrement()();
   TextColumn get name => text()();
+  TextColumn get shopName => text().nullable()();
   TextColumn get phone => text().nullable()();
-  IntColumn get creditLimitPaisa => integer().nullable()();
+  TextColumn get address => text().nullable()();
+  // routeId could be added later if needed
+  TextColumn get customerType => text().withDefault(const Constant('RETAIL'))();
+  IntColumn get creditLimitPaisa => integer().nullable()(); // null means unconstrained
   IntColumn get currentBalancePaisa => integer().withDefault(const Constant(0))();
 }
 
 class CustomerLedgerEntries extends Table {
   IntColumn get id => integer().autoIncrement()();
   IntColumn get customerId => integer().references(Customers, #id)();
-  IntColumn get amountPaisa => integer()();
-  TextColumn get entryType => text()(); // SALE, PAYMENT, RETURN
-  IntColumn get returnClaimId => integer().nullable()();
-  IntColumn get paymentId => integer().nullable()();
+  IntColumn get invoiceId => integer().nullable()();
+  TextColumn get entryType => text()(); // INVOICE_DEBIT, PAYMENT_CREDIT, RETURN_CREDIT, ADJUSTMENT
+  IntColumn get debitAmountPaisa => integer().withDefault(const Constant(0))();
+  IntColumn get creditAmountPaisa => integer().withDefault(const Constant(0))();
+  IntColumn get runningBalancePaisa => integer()();
+  TextColumn get notes => text().nullable()();
   DateTimeColumn get createdAt => dateTime().clientDefault(() => DateTime.now())();
 }
 
 class Sales extends Table {
   IntColumn get id => integer().autoIncrement()();
+  IntColumn get billNumber => integer().unique()();
   IntColumn get customerId => integer().nullable().references(Customers, #id)();
-  IntColumn get totalAmountPaisa => integer()();
-  TextColumn get paymentMode => text()();
-  IntColumn get creditOverrideBy => integer().nullable().references(Users, #id)();
-  DateTimeColumn get creditOverrideAt => dateTime().nullable()();
+  // salesman_id, route_id can be added later
+  TextColumn get saleType => text()(); // RETAIL, WHOLESALE
+  IntColumn get grossAmountPaisa => integer()();
+  IntColumn get discountAmountPaisa => integer().withDefault(const Constant(0))();
+  IntColumn get netAmountPaisa => integer()();
+  IntColumn get paidAmountPaisa => integer()();
+  IntColumn get previousBalancePaisa => integer().withDefault(const Constant(0))();
+  TextColumn get paymentStatus => text()(); // PAID, PARTIAL, CREDIT
+  IntColumn get createdBy => integer().references(Users, #id)();
   DateTimeColumn get createdAt => dateTime().clientDefault(() => DateTime.now())();
 }
 
@@ -80,10 +92,9 @@ class SaleItems extends Table {
   IntColumn get id => integer().autoIncrement()();
   IntColumn get saleId => integer().references(Sales, #id)();
   IntColumn get partId => integer().references(Parts, #id)();
+  IntColumn get unitRatePaisa => integer()();
   IntColumn get qty => integer()();
-  IntColumn get unitCostPaisa => integer()();
-  IntColumn get pricePaisa => integer()();
-  TextColumn get rateSource => text()(); // RETAIL, WHOLESALE, MANUAL
+  IntColumn get lineTotalPaisa => integer()();
 }
 
 class Expenses extends Table {

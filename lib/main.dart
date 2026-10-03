@@ -4,6 +4,7 @@ import 'core/db/app_database.dart';
 import 'features/inventory/parts_master_screen.dart';
 import 'features/purchases/grn_screen.dart';
 import 'features/barcode_studio/barcode_studio_screen.dart';
+import 'features/pos/pos_screen.dart';
 import 'package:drift/native.dart';
 
 void main() {
@@ -59,6 +60,11 @@ class DashboardScreen extends StatelessWidget {
             ElevatedButton(
               onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const BarcodeStudioScreen())),
               child: const Text('3. Barcode Studio'),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const PosScreen())),
+              child: const Text('4. POS Terminal (Phase 3)'),
             ),
           ],
         ),
