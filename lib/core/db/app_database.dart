@@ -12,7 +12,7 @@ part 'app_database.g.dart';
   AuditLogs,
   PartCategories,
   Parts,
-  StockMovements,
+  StockAdjustments,
   Customers,
   CustomerLedgerEntries,
   Sales,
@@ -23,8 +23,8 @@ part 'app_database.g.dart';
   ReturnClaims,
   ReturnClaimItems,
   Suppliers,
-  Purchases,
-  PurchaseItems,
+  PurchasesGrn,
+  PurchaseItemsGrn,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);

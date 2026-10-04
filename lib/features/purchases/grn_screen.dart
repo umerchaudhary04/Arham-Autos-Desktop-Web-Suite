@@ -13,6 +13,7 @@ class GrnScreen extends ConsumerStatefulWidget {
 
 class _GrnScreenState extends ConsumerState<GrnScreen> {
   final _vendorBillController = TextEditingController();
+  final _notesController = TextEditingController();
   final List<_GrnItem> _items = [];
   
   Part? _selectedPart;
@@ -42,22 +43,26 @@ class _GrnScreenState extends ConsumerState<GrnScreen> {
 
     await db.transaction(() async {
       // 1. Create Purchase record
-      final purchaseId = await db.into(db.purchases).insert(
-        PurchasesCompanion(
-          vendorBillNo: drift.Value(_vendorBillController.text),
+      final grnId = await db.into(db.purchasesGrn).insert(
+        PurchasesGrnCompanion(
+          supplierInvoiceNo: drift.Value(_vendorBillController.text),
+          purchaseDate: drift.Value(DateTime.now()),
           totalAmountPaisa: drift.Value(totalAmount),
-          recordedBy: const drift.Value(1), // Dummy user ID
+          notes: drift.Value(_notesController.text),
+          createdBy: const drift.Value(1), // Dummy user ID
         )
       );
 
       // 2. Add items, update stock & moving average cost
       for (final item in _items) {
-        await db.into(db.purchaseItems).insert(
-          PurchaseItemsCompanion(
-            purchaseId: drift.Value(purchaseId),
+        final lineTotal = item.qty * item.unitCostPaisa;
+        await db.into(db.purchaseItemsGrn).insert(
+          PurchaseItemsGrnCompanion(
+            grnId: drift.Value(grnId),
             partId: drift.Value(item.part.id),
-            qty: drift.Value(item.qty),
-            unitCostPaisa: drift.Value(item.unitCostPaisa),
+            quantityReceived: drift.Value(item.qty),
+            unitPurchasePricePaisa: drift.Value(item.unitCostPaisa),
+            lineTotalPaisa: drift.Value(lineTotal),
           )
         );
 
@@ -75,18 +80,7 @@ class _GrnScreenState extends ConsumerState<GrnScreen> {
           )
         );
 
-        // Record stock movement
-        await db.into(db.stockMovements).insert(
-          StockMovementsCompanion(
-            partId: drift.Value(item.part.id),
-            movementType: const drift.Value('GRN_IN'),
-            qtyChange: drift.Value(item.qty),
-            unitCostPaisa: drift.Value(item.unitCostPaisa),
-            refTable: const drift.Value('purchases'),
-            refId: drift.Value(purchaseId),
-            userId: const drift.Value(1),
-          )
-        );
+        // Record stock movement (We don't strictly have a GRN_IN in StockAdjustments constraints according to TRD, but TRD specifies reason must be DAMAGE, PHYSICAL_AUDIT, DEFECTIVE_BATCH, INTERNAL_USE for StockAdjustments. Wait! GRN and Sales affect stock directly but maybe shouldn't go into stock_adjustments table, or if they do, TRD says stock_adjustments reason MUST be IN... wait. TRD says: reason TEXT NOT NULL CHECK(reason IN ('DAMAGE', 'PHYSICAL_AUDIT', 'DEFECTIVE_BATCH', 'INTERNAL_USE')). So we shouldn't insert GRN movements into stock_adjustments. Let's just omit writing to stock_adjustments for GRN!)
       }
     });
 
@@ -95,6 +89,7 @@ class _GrnScreenState extends ConsumerState<GrnScreen> {
       setState(() {
         _items.clear();
         _vendorBillController.clear();
+        _notesController.clear();
       });
     }
   }
@@ -112,6 +107,10 @@ class _GrnScreenState extends ConsumerState<GrnScreen> {
             TextField(
               controller: _vendorBillController,
               decoration: const InputDecoration(labelText: 'Vendor Bill No (Optional)'),
+            ),
+            TextField(
+              controller: _notesController,
+              decoration: const InputDecoration(labelText: 'Notes (Optional)'),
             ),
             const Divider(),
             Row(

@@ -3,8 +3,9 @@ import 'users.dart';
 
 class AuditLogs extends Table {
   IntColumn get id => integer().autoIncrement()();
-  TextColumn get action => text()();
-  TextColumn get details => text().nullable()();
+  TextColumn get actionType => text()();
+  TextColumn get details => text()();
+  TextColumn get ipOrTerminal => text().withDefault(const Constant('LOCAL_TERMINAL'))();
   IntColumn get userId => integer().nullable().references(Users, #id)();
   TextColumn get usernameSnapshot => text().nullable()();
   TextColumn get roleSnapshot => text().nullable()();
@@ -24,6 +25,8 @@ class Parts extends Table {
   TextColumn get barcode => text().nullable()();
   TextColumn get nameEn => text()();
   TextColumn get nameUr => text().nullable()();
+  TextColumn get brand => text().nullable()();
+  TextColumn get modelCompatibility => text().nullable()();
   IntColumn get categoryId => integer().references(PartCategories, #id)();
   TextColumn get unit => text().withDefault(const Constant('PCS'))();
   IntColumn get avgCostPaisa => integer().withDefault(const Constant(0))();
@@ -33,18 +36,17 @@ class Parts extends Table {
   IntColumn get defectiveStock => integer().withDefault(const Constant(0))();
   IntColumn get currentStock => integer().withDefault(const Constant(0))();
   IntColumn get minStockAlert => integer().withDefault(const Constant(10))();
+  BoolColumn get isActive => boolean().withDefault(const Constant(true))();
+  DateTimeColumn get createdAt => dateTime().clientDefault(() => DateTime.now())();
 }
 
-class StockMovements extends Table {
+class StockAdjustments extends Table {
   IntColumn get id => integer().autoIncrement()();
   IntColumn get partId => integer().references(Parts, #id)();
-  TextColumn get movementType => text()(); // GRN_IN, SALE_OUT, ADJ_IN, ADJ_OUT, etc.
-  IntColumn get qtyChange => integer()();
-  IntColumn get unitCostPaisa => integer()();
-  TextColumn get refTable => text().nullable()();
-  IntColumn get refId => integer().nullable()();
+  IntColumn get adjustedBy => integer().references(Users, #id)();
+  IntColumn get quantityChange => integer()();
+  TextColumn get reason => text()(); // DAMAGE, PHYSICAL_AUDIT, DEFECTIVE_BATCH, INTERNAL_USE
   TextColumn get notes => text().nullable()();
-  IntColumn get userId => integer().references(Users, #id)();
   DateTimeColumn get createdAt => dateTime().clientDefault(() => DateTime.now())();
 }
 
@@ -54,10 +56,11 @@ class Customers extends Table {
   TextColumn get shopName => text().nullable()();
   TextColumn get phone => text().nullable()();
   TextColumn get address => text().nullable()();
-  // routeId could be added later if needed
+  IntColumn get routeId => integer().nullable().references(Routes, #id)();
   TextColumn get customerType => text().withDefault(const Constant('RETAIL'))();
   IntColumn get creditLimitPaisa => integer().nullable()(); // null means unconstrained
   IntColumn get currentBalancePaisa => integer().withDefault(const Constant(0))();
+  DateTimeColumn get createdAt => dateTime().clientDefault(() => DateTime.now())();
 }
 
 class CustomerLedgerEntries extends Table {
@@ -76,7 +79,8 @@ class Sales extends Table {
   IntColumn get id => integer().autoIncrement()();
   IntColumn get billNumber => integer().unique()();
   IntColumn get customerId => integer().nullable().references(Customers, #id)();
-  // salesman_id, route_id can be added later
+  IntColumn get salesmanId => integer().nullable().references(Employees, #id)();
+  IntColumn get routeId => integer().nullable().references(Routes, #id)();
   TextColumn get saleType => text()(); // RETAIL, WHOLESALE
   IntColumn get grossAmountPaisa => integer()();
   IntColumn get discountAmountPaisa => integer().withDefault(const Constant(0))();
@@ -154,22 +158,39 @@ class Suppliers extends Table {
   TextColumn get name => text()();
   TextColumn get phone => text().nullable()();
   TextColumn get company => text().nullable()();
+  TextColumn get address => text().nullable()();
   IntColumn get currentBalancePaisa => integer().withDefault(const Constant(0))();
-}
-
-class Purchases extends Table {
-  IntColumn get id => integer().autoIncrement()();
-  IntColumn get supplierId => integer().nullable().references(Suppliers, #id)();
-  TextColumn get vendorBillNo => text().nullable()();
-  IntColumn get totalAmountPaisa => integer()();
-  IntColumn get recordedBy => integer().references(Users, #id)();
   DateTimeColumn get createdAt => dateTime().clientDefault(() => DateTime.now())();
 }
 
-class PurchaseItems extends Table {
+class PurchasesGrn extends Table {
   IntColumn get id => integer().autoIncrement()();
-  IntColumn get purchaseId => integer().references(Purchases, #id)();
+  IntColumn get supplierId => integer().nullable().references(Suppliers, #id)();
+  TextColumn get supplierInvoiceNo => text().nullable()();
+  DateTimeColumn get purchaseDate => dateTime()();
+  IntColumn get totalAmountPaisa => integer()();
+  IntColumn get createdBy => integer().references(Users, #id)();
+  TextColumn get notes => text().nullable()();
+  DateTimeColumn get createdAt => dateTime().clientDefault(() => DateTime.now())();
+}
+
+class PurchaseItemsGrn extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get grnId => integer().references(PurchasesGrn, #id)();
   IntColumn get partId => integer().references(Parts, #id)();
-  IntColumn get qty => integer()();
-  IntColumn get unitCostPaisa => integer()();
+  IntColumn get quantityReceived => integer()();
+  IntColumn get unitPurchasePricePaisa => integer()();
+  IntColumn get lineTotalPaisa => integer()();
+}
+
+class SupplierLedgerEntries extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  IntColumn get supplierId => integer().references(Suppliers, #id)();
+  IntColumn get grnId => integer().nullable().references(PurchasesGrn, #id)();
+  TextColumn get entryType => text()(); // PURCHASE_PAYABLE, PAYMENT_PAID, RETURN_DEBIT
+  IntColumn get debitAmountPaisa => integer().withDefault(const Constant(0))();
+  IntColumn get creditAmountPaisa => integer().withDefault(const Constant(0))();
+  IntColumn get runningBalancePaisa => integer()();
+  TextColumn get notes => text().nullable()();
+  DateTimeColumn get createdAt => dateTime().clientDefault(() => DateTime.now())();
 }

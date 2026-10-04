@@ -15,8 +15,9 @@ class StockAdjustmentDialog extends ConsumerStatefulWidget {
 class _StockAdjustmentDialogState extends ConsumerState<StockAdjustmentDialog> {
   final _formKey = GlobalKey<FormState>();
   final _qtyController = TextEditingController();
-  final _reasonController = TextEditingController();
+  final _notesController = TextEditingController();
   String _adjustmentType = 'ADJ_IN'; // or ADJ_OUT
+  String _reason = 'PHYSICAL_AUDIT'; // Default valid reason
 
   void _save() async {
     if (_formKey.currentState!.validate()) {
@@ -38,14 +39,13 @@ class _StockAdjustmentDialogState extends ConsumerState<StockAdjustmentDialog> {
         );
         
         // Record movement
-        await db.into(db.stockMovements).insert(
-          StockMovementsCompanion(
+        await db.into(db.stockAdjustments).insert(
+          StockAdjustmentsCompanion(
             partId: drift.Value(widget.part.id),
-            movementType: drift.Value(_adjustmentType),
-            qtyChange: drift.Value(finalQtyChange),
-            unitCostPaisa: drift.Value(widget.part.avgCostPaisa),
-            notes: drift.Value(_reasonController.text),
-            userId: const drift.Value(1), // Dummy user ID for now
+            quantityChange: drift.Value(finalQtyChange),
+            reason: drift.Value(_reason),
+            notes: drift.Value(_notesController.text),
+            adjustedBy: const drift.Value(1), // Dummy user ID for now
           )
         );
       });
@@ -84,10 +84,20 @@ class _StockAdjustmentDialogState extends ConsumerState<StockAdjustmentDialog> {
                 return null;
               },
             ),
-            TextFormField(
-              controller: _reasonController,
+            DropdownButtonFormField<String>(
+              value: _reason,
+              items: const [
+                DropdownMenuItem(value: 'DAMAGE', child: Text('Damage')),
+                DropdownMenuItem(value: 'PHYSICAL_AUDIT', child: Text('Physical Audit')),
+                DropdownMenuItem(value: 'DEFECTIVE_BATCH', child: Text('Defective Batch')),
+                DropdownMenuItem(value: 'INTERNAL_USE', child: Text('Internal Use')),
+              ],
+              onChanged: (v) => setState(() => _reason = v!),
               decoration: const InputDecoration(labelText: 'Reason for Adjustment *'),
-              validator: (v) => v == null || v.trim().isEmpty ? 'Reason is compulsory' : null,
+            ),
+            TextFormField(
+              controller: _notesController,
+              decoration: const InputDecoration(labelText: 'Notes (Optional)'),
             ),
           ],
         ),

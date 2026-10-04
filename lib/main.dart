@@ -14,9 +14,16 @@ import 'features/reports/reports_screen.dart';
 import 'features/settings/settings_screen.dart';
 import 'package:drift/native.dart';
 
+import 'dart:io';
+import 'core/db/connection/connection.dart';
+
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_gen/gen_l10n/app_localizations.dart';
+
 void main() {
-  // Use in-memory db for testing UI quickly
-  final db = AppDatabase(NativeDatabase.memory());
+  final dbFile = File('arham_autos_placeholder.db');
+  final dummyKey = List.filled(64, '0').join();
+  final db = AppDatabase(openConnection(dummyKey, dbFile));
   
   runApp(
     ProviderScope(
@@ -38,6 +45,16 @@ class MyApp extends ConsumerWidget {
     return MaterialApp(
       title: 'Arham Autos',
       locale: locale,
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      supportedLocales: const [
+        Locale('en'),
+        Locale('ur'),
+      ],
       builder: (context, child) {
         return Directionality(
           textDirection: locale.languageCode == 'ur' ? TextDirection.rtl : TextDirection.ltr,

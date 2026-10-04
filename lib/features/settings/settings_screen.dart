@@ -17,7 +17,8 @@ class _SettingsRecoveryScreenState extends ConsumerState<SettingsRecoveryScreen>
     final String? path = await getDirectoryPath();
     if (path != null) {
       final db = ref.read(dbProvider);
-      final destPath = '$path/ArhamAutos_Backup.bak';
+      final timestamp = DateTime.now().toIso8601String().replaceAll(RegExp(r'[:-]'), '').split('.').first.replaceFirst('T', '_');
+      final destPath = '$path/ArhamAutos_Backup_$timestamp.bak';
       try {
         await db.backupDatabase(destPath);
         if (mounted) {

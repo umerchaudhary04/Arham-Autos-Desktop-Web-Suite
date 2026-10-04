@@ -1,9 +1,8 @@
 import 'package:drift/drift.dart';
 
 class SystemConfigs extends Table {
-  TextColumn get key => text()();
-  TextColumn get value => text().nullable()();
-
-  @override
-  Set<Column> get primaryKey => {key};
+  IntColumn get id => integer().autoIncrement()();
+  TextColumn get configKey => text().unique()();
+  TextColumn get configValue => text()();
+  DateTimeColumn get updatedAt => dateTime().clientDefault(() => DateTime.now())();
 }

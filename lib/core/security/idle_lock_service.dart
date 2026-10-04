@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
 
 class IdleLockService {
   Timer? _timer;
@@ -8,6 +9,12 @@ class IdleLockService {
 
   IdleLockService({required this.onLock}) {
     _startTimer();
+    HardwareKeyboard.instance.addHandler(_handleKeyEvent);
+  }
+
+  bool _handleKeyEvent(KeyEvent event) {
+    handleUserInteraction();
+    return false;
   }
 
   void setTimeout(int minutes) {
@@ -32,5 +39,6 @@ class IdleLockService {
 
   void dispose() {
     _timer?.cancel();
+    HardwareKeyboard.instance.removeHandler(_handleKeyEvent);
   }
 }
