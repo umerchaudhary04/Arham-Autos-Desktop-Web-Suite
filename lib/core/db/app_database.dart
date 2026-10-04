@@ -30,4 +30,25 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
   @override
   int get schemaVersion => 1;
+
+  Future<void> backupDatabase(String destinationPath) async {
+    await customStatement('VACUUM INTO ?', [destinationPath]);
+  }
+
+  Future<void> factoryReset() async {
+    await transaction(() async {
+      await customStatement('PRAGMA foreign_keys = OFF;');
+      
+      final tablesToClear = allTables.where((t) => 
+        t.actualTableName != 'audit_logs' && 
+        t.actualTableName != 'system_configs'
+      );
+      
+      for (final table in tablesToClear) {
+        await customStatement('DELETE FROM ${table.actualTableName};');
+      }
+      
+      await customStatement('PRAGMA foreign_keys = ON;');
+    });
+  }
 }
