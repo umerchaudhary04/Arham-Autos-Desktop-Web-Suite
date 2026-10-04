@@ -65,9 +65,9 @@ class MyApp extends ConsumerWidget {
         primarySwatch: Colors.blue,
         fontFamilyFallback: const ['Noto Nastaliq Urdu'],
         scrollbarTheme: ScrollbarThemeData(
-          thumbVisibility: MaterialStateProperty.all(true),
-          trackVisibility: MaterialStateProperty.all(true),
-          thickness: MaterialStateProperty.all(8.0),
+          thumbVisibility: WidgetStateProperty.all(true),
+          trackVisibility: WidgetStateProperty.all(true),
+          thickness: WidgetStateProperty.all(8.0),
           interactive: true,
         ),
       ),

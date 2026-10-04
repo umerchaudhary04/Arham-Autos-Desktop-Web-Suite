@@ -66,7 +66,7 @@ class _PartFormDialogState extends ConsumerState<PartFormDialog> {
         final cat = await (db.select(db.partCategories)..limit(1)).getSingleOrNull();
         if (cat == null) {
           await db.into(db.partCategories).insert(
-            PartCategoriesCompanion(nameEn: const drift.Value('General'))
+            const PartCategoriesCompanion(nameEn: drift.Value('General'))
           );
         }
         await db.into(db.parts).insert(companion);

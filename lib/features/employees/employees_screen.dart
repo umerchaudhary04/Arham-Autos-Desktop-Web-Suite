@@ -34,6 +34,7 @@ class _EmployeesScreenState extends ConsumerState<EmployeesScreen> {
           ElevatedButton(
             onPressed: () async {
               final db = ref.read(dbProvider);
+              final nav = Navigator.of(context);
               await db.into(db.employees).insert(
                 EmployeesCompanion(
                   name: drift.Value(nameController.text),
@@ -41,7 +42,7 @@ class _EmployeesScreenState extends ConsumerState<EmployeesScreen> {
                   monthlySalaryPaisa: drift.Value((double.parse(salaryController.text) * 100).toInt()),
                 )
               );
-              if (mounted) Navigator.pop(context);
+              if (mounted) nav.pop();
             },
             child: const Text('Save')
           )
@@ -70,13 +71,14 @@ class _EmployeesScreenState extends ConsumerState<EmployeesScreen> {
           ElevatedButton(
             onPressed: () async {
               final db = ref.read(dbProvider);
+              final nav = Navigator.of(context);
               await db.into(db.routes).insert(
                 RoutesCompanion(
                   name: drift.Value(nameController.text),
                   city: drift.Value(cityController.text),
                 )
               );
-              if (mounted) Navigator.pop(context);
+              if (mounted) nav.pop();
             },
             child: const Text('Save')
           )

@@ -124,7 +124,7 @@ class _GrnScreenState extends ConsumerState<GrnScreen> {
                       final parts = snapshot.data!;
                       return DropdownButtonFormField<Part>(
                         decoration: const InputDecoration(labelText: 'Select Part'),
-                        value: _selectedPart,
+                        initialValue: _selectedPart,
                         items: parts.map((p) => DropdownMenuItem(value: p, child: Text(p.nameEn))).toList(),
                         onChanged: (v) => setState(() => _selectedPart = v),
                       );

@@ -246,8 +246,11 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                               children: [
                                 IconButton(icon: const Icon(Icons.remove), onPressed: () {
                                   setState(() {
-                                    if (item.qty > 1) item.qty--;
-                                    else _items.removeAt(index);
+                                    if (item.qty > 1) {
+                                      item.qty--;
+                                    } else {
+                                      _items.removeAt(index);
+                                    }
                                   });
                                 }),
                                 Text('${item.qty}'),
@@ -281,7 +284,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                         if (!snapshot.hasData) return const SizedBox.shrink();
                         return DropdownButtonFormField<Customer>(
                           decoration: const InputDecoration(labelText: 'Customer'),
-                          value: _selectedCustomer,
+                          initialValue: _selectedCustomer,
                           items: snapshot.data!.map((c) => DropdownMenuItem(value: c, child: Text(c.name))).toList(),
                           onChanged: (c) {
                             setState(() {

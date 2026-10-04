@@ -66,7 +66,7 @@ class _StockAdjustmentDialogState extends ConsumerState<StockAdjustmentDialog> {
             Text('Current Stock: ${widget.part.currentStock}'),
             const SizedBox(height: 10),
             DropdownButtonFormField<String>(
-              value: _adjustmentType,
+              initialValue: _adjustmentType,
               items: const [
                 DropdownMenuItem(value: 'ADJ_IN', child: Text('Add to Stock (+)')),
                 DropdownMenuItem(value: 'ADJ_OUT', child: Text('Remove from Stock (-)')),
@@ -85,7 +85,7 @@ class _StockAdjustmentDialogState extends ConsumerState<StockAdjustmentDialog> {
               },
             ),
             DropdownButtonFormField<String>(
-              value: _reason,
+              initialValue: _reason,
               items: const [
                 DropdownMenuItem(value: 'DAMAGE', child: Text('Damage')),
                 DropdownMenuItem(value: 'PHYSICAL_AUDIT', child: Text('Physical Audit')),

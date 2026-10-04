@@ -55,7 +55,7 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> {
                 Expanded(
                   child: DropdownButtonFormField<String>(
                     decoration: const InputDecoration(labelText: 'Category'),
-                    value: _category,
+                    initialValue: _category,
                     items: const [
                       DropdownMenuItem(value: 'RENT', child: Text('Rent')),
                       DropdownMenuItem(value: 'ELECTRICITY', child: Text('Electricity')),
