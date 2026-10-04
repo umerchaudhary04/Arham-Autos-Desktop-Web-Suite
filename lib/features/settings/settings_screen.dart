@@ -87,8 +87,8 @@ class _SettingsRecoveryScreenState extends ConsumerState<SettingsRecoveryScreen>
       final db = ref.read(dbProvider);
 
       try {
-        final configRecord = await (db.select(db.systemConfigs)..where((c) => c.key.equals('MASTER_KEY'))).getSingleOrNull();
-        if (configRecord == null || configRecord.value != masterKey) {
+        final configRecord = await (db.select(db.systemConfigs)..where((c) => c.configKey.equals('MASTER_KEY'))).getSingleOrNull();
+        if (configRecord == null || configRecord.configValue != masterKey) {
           throw Exception('Invalid Master Key.');
         }
 
@@ -100,8 +100,8 @@ class _SettingsRecoveryScreenState extends ConsumerState<SettingsRecoveryScreen>
         await db.factoryReset();
 
         await db.into(db.auditLogs).insert(AuditLogsCompanion.insert(
-          action: 'DATA_WIPE',
-          details: const drift.Value('Factory reset performed'),
+          actionType: 'DATA_WIPE',
+          details: 'Factory reset performed',
           userId: drift.Value(managerUser.id),
         ));
 
