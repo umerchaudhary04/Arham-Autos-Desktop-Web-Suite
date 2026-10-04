@@ -11,9 +11,10 @@ class AboutDialogWidget extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Technology Partner: AlphaSync Systems'),
+          Text('Technology Partner: AlphaSync Systems (Private) Limited'),
           SizedBox(height: 8),
-          Text('Contact: 03140486627'),
+          Text('Email: info@alphasync.codes'),
+          Text('Phone: 03140486627'),
         ],
       ),
       actions: [

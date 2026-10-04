@@ -4,7 +4,7 @@ import 'package:printing/printing.dart';
 import '../../core/db/app_database.dart';
 
 class InvoicePrinter {
-  static Future<void> printInvoice(Sale sale, List<SaleItem> items, List<Part> parts, Customer? customer) async {
+  static Future<void> printInvoice(Sale sale, List<SaleItem> items, List<Part> parts, Customer? customer, {Route? route, Employee? salesman}) async {
     final urduFont = await PdfGoogleFonts.notoNastaliqUrduRegular();
     
     final pdf = pw.Document();
@@ -45,7 +45,8 @@ class InvoicePrinter {
                         children: [
                           pw.Text('Customer: ${customer?.name ?? 'Walk-in'}'),
                           if (customer?.phone != null) pw.Text('Phone: ${customer?.phone}'),
-                          pw.Text('Sale Type: ${sale.saleType}'),
+                          pw.Text('Route: ${route?.name ?? '-'}'),
+                          pw.Text('Booker/DSO: ${salesman?.name ?? '-'}'),
                         ],
                       ),
                     ),
@@ -56,6 +57,7 @@ class InvoicePrinter {
                         children: [
                           pw.Text('Bill No: ${sale.billNumber}', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
                           pw.Text('Date: ${sale.createdAt.toIso8601String().split('T').first}'),
+                          pw.Text('Sale Type: ${sale.saleType}'),
                           pw.Text('Status: ${sale.paymentStatus}'),
                         ],
                       ),
@@ -97,12 +99,12 @@ class InvoicePrinter {
                     pw.Text('Gross Amount: Rs ${(sale.grossAmountPaisa / 100).toStringAsFixed(2)}'),
                     if (sale.discountAmountPaisa > 0)
                       pw.Text('Discount: Rs ${(sale.discountAmountPaisa / 100).toStringAsFixed(2)}'),
-                    pw.Text('Net Amount: Rs ${(sale.netAmountPaisa / 100).toStringAsFixed(2)}', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 14)),
+                    pw.Text('Net Payable: Rs ${(sale.netAmountPaisa / 100).toStringAsFixed(2)}', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 14)),
                     if (customer != null) ...[
                       pw.SizedBox(height: 5),
-                      pw.Text('Previous Balance: Rs ${(sale.previousBalancePaisa / 100).toStringAsFixed(2)}'),
+                      pw.Text('Previous Khata Balance: Rs ${(sale.previousBalancePaisa / 100).toStringAsFixed(2)}'),
                       pw.Text('Paid Amount: Rs ${(sale.paidAmountPaisa / 100).toStringAsFixed(2)}'),
-                      pw.Text('Total Outstanding: Rs ${((sale.previousBalancePaisa + sale.netAmountPaisa - sale.paidAmountPaisa) / 100).toStringAsFixed(2)}'),
+                      pw.Text('Total Outstanding: Rs ${((sale.previousBalancePaisa + sale.netAmountPaisa - sale.paidAmountPaisa) / 100).toStringAsFixed(2)}', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 14)),
                     ]
                   ],
                 ),
@@ -115,7 +117,7 @@ class InvoicePrinter {
             pw.Center(
               child: pw.Text(
                 'For Account Solution Contact AlphaSync Systems: 03140486627',
-                style: const pw.TextStyle(fontSize: 10),
+                style: const pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold),
               ),
             ),
           ],

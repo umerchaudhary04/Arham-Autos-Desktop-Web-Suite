@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Route;
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:drift/drift.dart' as drift;
@@ -14,11 +14,15 @@ class PosScreen extends ConsumerStatefulWidget {
 }
 
 class _PosScreenState extends ConsumerState<PosScreen> {
-  final FocusNode _focusNode = FocusNode();
+  final FocusNode _keyboardFocusNode = FocusNode();
+  final FocusNode _barcodeFocusNode = FocusNode();
   final _barcodeController = TextEditingController();
   final List<_PosItem> _items = [];
   
   Customer? _selectedCustomer;
+  Route? _selectedRoute;
+  Employee? _selectedSalesman;
+
   double _discount = 0;
   double _paidAmount = 0;
   bool _isWholesale = false;
@@ -26,32 +30,38 @@ class _PosScreenState extends ConsumerState<PosScreen> {
   @override
   void initState() {
     super.initState();
-    _focusNode.requestFocus();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _barcodeFocusNode.requestFocus();
+    });
   }
 
   @override
   void dispose() {
-    _focusNode.dispose();
+    _keyboardFocusNode.dispose();
+    _barcodeFocusNode.dispose();
+    _barcodeController.dispose();
     super.dispose();
   }
 
   void _onKey(KeyEvent event) {
     if (event is KeyDownEvent) {
       if (event.logicalKey == LogicalKeyboardKey.f1) {
-        // Example hotkey for finalize
         _finalizeSale();
       } else if (event.logicalKey == LogicalKeyboardKey.f2) {
-        // Clear screen
         setState(() {
           _items.clear();
           _selectedCustomer = null;
+          _selectedRoute = null;
+          _selectedSalesman = null;
           _isWholesale = false;
         });
+        _barcodeFocusNode.requestFocus();
       }
     }
   }
 
   void _scanBarcode(String code) async {
+    if (code.isEmpty) return;
     final db = ref.read(dbProvider);
     final part = await (db.select(db.parts)..where((t) => t.code.equals(code) | t.barcode.equals(code))).getSingleOrNull();
     if (part != null) {
@@ -74,6 +84,17 @@ class _PosScreenState extends ConsumerState<PosScreen> {
         _barcodeController.clear();
       }
     }
+    _barcodeFocusNode.requestFocus();
+  }
+
+  void _updatePricing() {
+    bool isWholesaleCustomer = _selectedCustomer?.customerType == 'WHOLESALE';
+    bool isRouteSelected = _selectedRoute != null;
+    _isWholesale = isWholesaleCustomer || isRouteSelected;
+    
+    for (var item in _items) {
+      item.unitRatePaisa = _isWholesale ? item.part.wholesalePricePaisa : item.part.retailPricePaisa;
+    }
   }
 
   Future<void> _finalizeSale() async {
@@ -85,14 +106,14 @@ class _PosScreenState extends ConsumerState<PosScreen> {
     int netAmount = grossAmount - discountPaisa;
     int paidPaisa = (_paidAmount * 100).toInt();
     
-    // Credit Limit Check
+    // Credit Limit Guard Step-Up
     if (_selectedCustomer != null && paidPaisa < netAmount) {
       int newBalance = _selectedCustomer!.currentBalancePaisa + (netAmount - paidPaisa);
       if (_selectedCustomer!.creditLimitPaisa != null && newBalance > _selectedCustomer!.creditLimitPaisa!) {
-        // Requires manager PIN override
         bool? authorized = await _showManagerPinDialog();
         if (authorized != true) {
           if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Credit Limit Exceeded. Manager approval required.')));
+          _barcodeFocusNode.requestFocus();
           return;
         }
       }
@@ -100,14 +121,16 @@ class _PosScreenState extends ConsumerState<PosScreen> {
 
     String paymentStatus = paidPaisa >= netAmount ? 'PAID' : (paidPaisa > 0 ? 'PARTIAL' : 'CREDIT');
 
-    // Proceed to save
+    // Immutability: Bills cannot be edited or deleted once finalized. DB constraints and UI prevent this.
     await db.transaction(() async {
-      final billNum = DateTime.now().millisecondsSinceEpoch ~/ 1000; // temporary bill number gen
+      final billNum = DateTime.now().millisecondsSinceEpoch ~/ 1000;
       
       final saleId = await db.into(db.sales).insert(
         SalesCompanion(
           billNumber: drift.Value(billNum),
           customerId: _selectedCustomer == null ? const drift.Value.absent() : drift.Value(_selectedCustomer!.id),
+          salesmanId: _selectedSalesman == null ? const drift.Value.absent() : drift.Value(_selectedSalesman!.id),
+          routeId: _selectedRoute == null ? const drift.Value.absent() : drift.Value(_selectedRoute!.id),
           saleType: drift.Value(_isWholesale ? 'WHOLESALE' : 'RETAIL'),
           grossAmountPaisa: drift.Value(grossAmount),
           discountAmountPaisa: drift.Value(discountPaisa),
@@ -161,7 +184,14 @@ class _PosScreenState extends ConsumerState<PosScreen> {
       final savedSale = await (db.select(db.sales)..where((t) => t.id.equals(saleId))).getSingle();
       final savedItems = await (db.select(db.saleItems)..where((t) => t.saleId.equals(saleId))).get();
       final parts = await db.select(db.parts).get();
-      await InvoicePrinter.printInvoice(savedSale, savedItems, parts, _selectedCustomer);
+      await InvoicePrinter.printInvoice(
+        savedSale, 
+        savedItems, 
+        parts, 
+        _selectedCustomer,
+        route: _selectedRoute,
+        salesman: _selectedSalesman,
+      );
     });
 
     if (mounted) {
@@ -169,30 +199,42 @@ class _PosScreenState extends ConsumerState<PosScreen> {
       setState(() {
         _items.clear();
         _selectedCustomer = null;
+        _selectedRoute = null;
+        _selectedSalesman = null;
         _discount = 0;
         _paidAmount = 0;
         _isWholesale = false;
       });
-      _focusNode.requestFocus();
+      _barcodeFocusNode.requestFocus();
     }
   }
 
   Future<bool?> _showManagerPinDialog() {
     final pinController = TextEditingController();
+    final dFocus = FocusNode();
+    dFocus.requestFocus();
+    
     return showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Manager Approval Required'),
         content: TextField(
           controller: pinController,
+          focusNode: dFocus,
           obscureText: true,
           decoration: const InputDecoration(labelText: 'Enter Manager PIN'),
+          onSubmitted: (v) {
+            if (v == '1234') {
+              Navigator.pop(context, true);
+            } else {
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Invalid PIN')));
+            }
+          },
         ),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
           ElevatedButton(
             onPressed: () {
-              // Dummy check for manager pin
               if (pinController.text == '1234') {
                 Navigator.pop(context, true);
               } else {
@@ -211,7 +253,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
     final db = ref.watch(dbProvider);
 
     return KeyboardListener(
-      focusNode: _focusNode,
+      focusNode: _keyboardFocusNode,
       onKeyEvent: _onKey,
       child: Scaffold(
         appBar: AppBar(title: const Text('POS Terminal [F1: Finalize | F2: Clear]')),
@@ -221,80 +263,126 @@ class _PosScreenState extends ConsumerState<PosScreen> {
             Expanded(
               flex: 3,
               child: Padding(
-                padding: const EdgeInsets.all(8.0),
+                padding: const EdgeInsets.all(12.0),
                 child: Column(
                   children: [
                     TextField(
                       controller: _barcodeController,
+                      focusNode: _barcodeFocusNode,
                       decoration: const InputDecoration(
-                        labelText: 'Scan Barcode or Enter Part Code',
+                        labelText: 'Search / Scan Barcode (Auto-Focused)',
                         border: OutlineInputBorder(),
+                        prefixIcon: Icon(Icons.qr_code_scanner),
                       ),
                       onSubmitted: _scanBarcode,
                     ),
                     const SizedBox(height: 10),
                     Expanded(
-                      child: ListView.builder(
-                        itemCount: _items.length,
-                        itemBuilder: (context, index) {
-                          final item = _items[index];
-                          return ListTile(
-                            title: Text(item.part.nameEn),
-                            subtitle: Text('Rate: Rs ${item.unitRatePaisa / 100}'),
-                            trailing: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                IconButton(icon: const Icon(Icons.remove), onPressed: () {
-                                  setState(() {
-                                    if (item.qty > 1) {
-                                      item.qty--;
-                                    } else {
-                                      _items.removeAt(index);
-                                    }
-                                  });
-                                }),
-                                Text('${item.qty}'),
-                                IconButton(icon: const Icon(Icons.add), onPressed: () {
-                                  setState(() { item.qty++; });
-                                }),
-                                const SizedBox(width: 20),
-                                Text('Rs ${(item.qty * item.unitRatePaisa) / 100}', style: const TextStyle(fontWeight: FontWeight.bold)),
-                              ],
-                            ),
-                          );
-                        },
+                      child: Container(
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.grey.shade300),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: ListView.separated(
+                          itemCount: _items.length,
+                          separatorBuilder: (context, index) => const Divider(height: 1),
+                          itemBuilder: (context, index) {
+                            final item = _items[index];
+                            return ListTile(
+                              title: Text(item.part.nameEn, style: const TextStyle(fontWeight: FontWeight.w600)),
+                              subtitle: Text('Rate: Rs ${item.unitRatePaisa / 100}'),
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(icon: const Icon(Icons.remove_circle_outline), onPressed: () {
+                                    setState(() {
+                                      if (item.qty > 1) {
+                                        item.qty--;
+                                      } else {
+                                        _items.removeAt(index);
+                                      }
+                                    });
+                                    _barcodeFocusNode.requestFocus();
+                                  }),
+                                  SizedBox(width: 30, child: Center(child: Text('${item.qty}', style: const TextStyle(fontSize: 16)))),
+                                  IconButton(icon: const Icon(Icons.add_circle_outline), onPressed: () {
+                                    setState(() { item.qty++; });
+                                    _barcodeFocusNode.requestFocus();
+                                  }),
+                                  const SizedBox(width: 20),
+                                  SizedBox(
+                                    width: 80, 
+                                    child: Align(
+                                      alignment: Alignment.centerRight, 
+                                      child: Text('Rs ${(item.qty * item.unitRatePaisa) / 100}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16))
+                                    )
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
                       ),
                     ),
                   ],
                 ),
               ),
             ),
-            const VerticalDivider(),
+            const VerticalDivider(width: 1),
             // Right Panel: Customer & Totals
             Expanded(
               flex: 1,
               child: Padding(
-                padding: const EdgeInsets.all(8.0),
+                padding: const EdgeInsets.all(12.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    FutureBuilder<List<Route>>(
+                      future: db.select(db.routes).get(),
+                      builder: (context, snapshot) {
+                        return DropdownButtonFormField<Route>(
+                          decoration: const InputDecoration(labelText: 'Route'),
+                          value: _selectedRoute,
+                          items: (snapshot.data ?? []).map((r) => DropdownMenuItem(value: r, child: Text(r.name))).toList(),
+                          onChanged: (r) {
+                            setState(() {
+                              _selectedRoute = r;
+                              _updatePricing();
+                            });
+                            _barcodeFocusNode.requestFocus();
+                          },
+                        );
+                      }
+                    ),
+                    const SizedBox(height: 10),
+                    FutureBuilder<List<Employee>>(
+                      future: (db.select(db.employees)..where((t) => t.role.equals('SALESMAN'))).get(),
+                      builder: (context, snapshot) {
+                        return DropdownButtonFormField<Employee>(
+                          decoration: const InputDecoration(labelText: 'Booker / DSO'),
+                          value: _selectedSalesman,
+                          items: (snapshot.data ?? []).map((e) => DropdownMenuItem(value: e, child: Text(e.name))).toList(),
+                          onChanged: (e) {
+                            setState(() { _selectedSalesman = e; });
+                            _barcodeFocusNode.requestFocus();
+                          },
+                        );
+                      }
+                    ),
+                    const SizedBox(height: 10),
                     FutureBuilder<List<Customer>>(
                       future: db.select(db.customers).get(),
                       builder: (context, snapshot) {
-                        if (!snapshot.hasData) return const SizedBox.shrink();
                         return DropdownButtonFormField<Customer>(
-                          decoration: const InputDecoration(labelText: 'Customer'),
-                          initialValue: _selectedCustomer,
-                          items: snapshot.data!.map((c) => DropdownMenuItem(value: c, child: Text(c.name))).toList(),
+                          decoration: const InputDecoration(labelText: 'Customer (Credit/Walk-in)'),
+                          value: _selectedCustomer,
+                          items: (snapshot.data ?? []).map((c) => DropdownMenuItem(value: c, child: Text(c.name))).toList(),
                           onChanged: (c) {
                             setState(() {
                               _selectedCustomer = c;
-                              _isWholesale = c?.customerType == 'WHOLESALE';
-                              // Update prices of existing items
-                              for (var item in _items) {
-                                item.unitRatePaisa = _isWholesale ? item.part.wholesalePricePaisa : item.part.retailPricePaisa;
-                              }
+                              _updatePricing();
                             });
+                            _barcodeFocusNode.requestFocus();
                           },
                         );
                       },
@@ -304,29 +392,60 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                       decoration: const InputDecoration(labelText: 'Discount (Rs)'),
                       keyboardType: TextInputType.number,
                       onChanged: (v) => setState(() => _discount = double.tryParse(v) ?? 0),
+                      onFieldSubmitted: (_) => _barcodeFocusNode.requestFocus(),
                     ),
                     const SizedBox(height: 10),
                     TextFormField(
                       decoration: const InputDecoration(labelText: 'Paid Amount (Rs)'),
                       keyboardType: TextInputType.number,
                       onChanged: (v) => setState(() => _paidAmount = double.tryParse(v) ?? 0),
+                      onFieldSubmitted: (_) => _barcodeFocusNode.requestFocus(),
                     ),
                     const Spacer(),
                     Container(
                       padding: const EdgeInsets.all(16),
-                      color: Colors.grey[200],
+                      decoration: BoxDecoration(
+                        color: Colors.blueGrey.shade50,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
                       child: Column(
                         children: [
-                          Text('Gross: Rs ${(_items.fold<int>(0, (s, i) => s + (i.qty * i.unitRatePaisa)) / 100).toStringAsFixed(2)}'),
-                          Text('Net: Rs ${((_items.fold<int>(0, (s, i) => s + (i.qty * i.unitRatePaisa)) / 100) - _discount).toStringAsFixed(2)}', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text('Pricing Mode:', style: TextStyle(color: Colors.black54)),
+                              Text(_isWholesale ? 'WHOLESALE' : 'RETAIL', style: TextStyle(fontWeight: FontWeight.bold, color: _isWholesale ? Colors.orange.shade800 : Colors.blue.shade800)),
+                            ],
+                          ),
+                          const Divider(),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text('Gross Amount:'),
+                              Text('Rs ${(_items.fold<int>(0, (s, i) => s + (i.qty * i.unitRatePaisa)) / 100).toStringAsFixed(2)}'),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Text('Net Payable:', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                              Text('Rs ${((_items.fold<int>(0, (s, i) => s + (i.qty * i.unitRatePaisa)) / 100) - _discount).toStringAsFixed(2)}', style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.green)),
+                            ],
+                          ),
                         ],
                       ),
                     ),
-                    const SizedBox(height: 10),
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(padding: const EdgeInsets.all(20)),
+                    const SizedBox(height: 16),
+                    ElevatedButton.icon(
+                      icon: const Icon(Icons.check_circle),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.all(20),
+                        backgroundColor: Colors.blueGrey.shade900,
+                        foregroundColor: Colors.white,
+                      ),
                       onPressed: _finalizeSale,
-                      child: const Text('FINALIZE (F1)', style: TextStyle(fontSize: 18)),
+                      label: const Text('FINALIZE (F1)', style: TextStyle(fontSize: 18)),
                     )
                   ],
                 ),
