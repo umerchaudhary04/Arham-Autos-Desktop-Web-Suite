@@ -117,7 +117,7 @@ class InvoicePrinter {
             pw.Center(
               child: pw.Text(
                 'For Account Solution Contact AlphaSync Systems: 03140486627',
-                style: const pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold),
+                style: pw.TextStyle(fontSize: 10, fontWeight: pw.FontWeight.bold),
               ),
             ),
           ],

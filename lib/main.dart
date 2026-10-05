@@ -66,8 +66,38 @@ class MyApp extends ConsumerWidget {
         );
       },
       theme: ThemeData(
-        primarySwatch: Colors.blue,
+        scaffoldBackgroundColor: Colors.white,
+        canvasColor: Colors.white,
+        cardColor: Colors.white,
+        dialogBackgroundColor: Colors.white,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF171717),
+          primary: const Color(0xFF171717),
+          secondary: const Color(0xFF404040),
+          surface: Colors.white,
+          background: Colors.white,
+        ),
+        fontFamily: 'Inter',
         fontFamilyFallback: const ['Noto Nastaliq Urdu'],
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Colors.white,
+          foregroundColor: Color(0xFF171717),
+          elevation: 0,
+          centerTitle: false,
+        ),
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFF171717),
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          ),
+        ),
+        dataTableTheme: DataTableThemeData(
+          headingRowColor: WidgetStateProperty.all(const Color(0xFFF9FAFB)),
+          dataRowColor: WidgetStateProperty.all(Colors.white),
+          headingTextStyle: const TextStyle(fontWeight: FontWeight.w600, color: Color(0xFF171717)),
+        ),
         scrollbarTheme: ScrollbarThemeData(
           thumbVisibility: WidgetStateProperty.all(true),
           trackVisibility: WidgetStateProperty.all(true),

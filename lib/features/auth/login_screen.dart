@@ -39,15 +39,19 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         role = 'Operator';
       }
     } else {
-      final userQuery = await (db.select(db.users)..where((t) => t.username.equals(username))).getSingleOrNull();
+      final userQuery = await (db.select(db.users)
+            ..where((t) => t.username.equals(username)))
+          .getSingleOrNull();
       if (userQuery != null && userQuery.passwordHash != null) {
-        bool isValid = await Kdf.verifyPassword(password, userQuery.passwordHash!);
+        bool isValid =
+            await Kdf.verifyPassword(password, userQuery.passwordHash!);
         if (isValid) {
           role = userQuery.role == 'MANAGER' ? 'Manager' : 'Operator';
         }
       } else if (userQuery != null && userQuery.passwordHash == null) {
-          // If for some reason passwordHash is null, assume legacy pin-based or dev env
-          if (password == 'admin' && userQuery.role == 'MANAGER') role = 'Manager';
+        // If for some reason passwordHash is null, assume legacy pin-based or dev env
+        if (password == 'admin' && userQuery.role == 'MANAGER')
+          role = 'Manager';
       }
     }
 
@@ -75,45 +79,52 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           width: 400,
           padding: const EdgeInsets.all(32),
           decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: const [
-              BoxShadow(
-                color: Colors.black12,
-                blurRadius: 20,
-                offset: Offset(0, 10),
-              )
-            ]
-          ),
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: const [
+                BoxShadow(
+                  color: Colors.black12,
+                  blurRadius: 20,
+                  offset: Offset(0, 10),
+                )
+              ]),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text('Arham Autos V2', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+              const Text('Arham Autos',
+                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
               const SizedBox(height: 32),
               TextField(
                 controller: _usernameController,
-                decoration: const InputDecoration(labelText: 'Username', border: OutlineInputBorder()),
+                decoration: const InputDecoration(
+                    labelText: 'Username', border: OutlineInputBorder()),
               ),
               const SizedBox(height: 16),
               TextField(
                 controller: _passwordController,
                 obscureText: true,
-                decoration: const InputDecoration(labelText: 'Password', border: OutlineInputBorder()),
+                decoration: const InputDecoration(
+                    labelText: 'Password', border: OutlineInputBorder()),
                 onSubmitted: (_) => _login(),
               ),
               const SizedBox(height: 24),
               if (_isError)
                 const Padding(
                   padding: EdgeInsets.only(bottom: 16),
-                  child: Text('Invalid credentials', style: TextStyle(color: Colors.red)),
+                  child: Text('Invalid credentials',
+                      style: TextStyle(color: Colors.red)),
                 ),
               SizedBox(
                 width: double.infinity,
                 height: 48,
                 child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFD4AF37), foregroundColor: Colors.white),
+                  style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFD4AF37),
+                      foregroundColor: Colors.white),
                   onPressed: _isLoading ? null : _login,
-                  child: _isLoading ? const CircularProgressIndicator(color: Colors.white) : const Text('Login'),
+                  child: _isLoading
+                      ? const CircularProgressIndicator(color: Colors.white)
+                      : const Text('Login'),
                 ),
               ),
             ],
