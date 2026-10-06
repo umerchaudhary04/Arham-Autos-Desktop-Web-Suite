@@ -17,6 +17,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _passwordController = TextEditingController();
   bool _isError = false;
   bool _isLoading = false;
+  bool _obscurePassword = true;
 
   Future<void> _login() async {
     final username = _usernameController.text.trim();
@@ -50,8 +51,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         }
       } else if (userQuery != null && userQuery.passwordHash == null) {
         // If for some reason passwordHash is null, assume legacy pin-based or dev env
-        if (password == 'admin' && userQuery.role == 'MANAGER')
+        if (password == 'admin' && userQuery.role == 'MANAGER') {
           role = 'Manager';
+        }
       }
     }
 
@@ -74,57 +76,159 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF8FAFC),
       body: Center(
         child: Container(
-          width: 400,
-          padding: const EdgeInsets.all(32),
+          width: double.infinity,
+          constraints: const BoxConstraints(maxWidth: 400),
+          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 40),
           decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: const [
-                BoxShadow(
-                  color: Colors.black12,
-                  blurRadius: 20,
-                  offset: Offset(0, 10),
-                )
-              ]),
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.06),
+                blurRadius: 24,
+                offset: const Offset(0, 8),
+              )
+            ],
+          ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text('Arham Autos',
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+              // Top Icon Badge
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                  border: Border.all(color: const Color(0xFFF1F5F9)),
+                ),
+                child: const Icon(Icons.arrow_forward, color: Color(0xFF0F172A)),
+              ),
+              const SizedBox(height: 24),
+              // Typography & Header
+              const Text(
+                'Arham Autos',
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF0F172A),
+                  fontFamily: 'Inter',
+                ),
+              ),
               const SizedBox(height: 32),
+              // Input Fields
               TextField(
                 controller: _usernameController,
-                decoration: const InputDecoration(
-                    labelText: 'Username', border: OutlineInputBorder()),
+                style: const TextStyle(color: Color(0xFF0F172A)),
+                decoration: InputDecoration(
+                  hintText: 'Username',
+                  hintStyle: const TextStyle(color: Color(0xFF94A3B8)),
+                  prefixIcon: const Icon(Icons.person_outline, color: Color(0xFF64748B)),
+                  filled: true,
+                  fillColor: const Color(0xFFF8FAFC),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: const BorderSide(color: Color(0xFF0F172A)),
+                  ),
+                ),
               ),
               const SizedBox(height: 16),
               TextField(
                 controller: _passwordController,
-                obscureText: true,
-                decoration: const InputDecoration(
-                    labelText: 'Password', border: OutlineInputBorder()),
+                obscureText: _obscurePassword,
+                style: const TextStyle(color: Color(0xFF0F172A)),
+                decoration: InputDecoration(
+                  hintText: 'Password',
+                  hintStyle: const TextStyle(color: Color(0xFF94A3B8)),
+                  prefixIcon: const Icon(Icons.lock_outline, color: Color(0xFF64748B)),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                      color: const Color(0xFF64748B),
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _obscurePassword = !_obscurePassword;
+                      });
+                    },
+                  ),
+                  filled: true,
+                  fillColor: const Color(0xFFF8FAFC),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: const BorderSide(color: Color(0xFF0F172A)),
+                  ),
+                ),
                 onSubmitted: (_) => _login(),
               ),
               const SizedBox(height: 24),
               if (_isError)
                 const Padding(
                   padding: EdgeInsets.only(bottom: 16),
-                  child: Text('Invalid credentials',
-                      style: TextStyle(color: Colors.red)),
+                  child: Text(
+                    'Invalid credentials',
+                    style: TextStyle(color: Colors.red),
+                  ),
                 ),
+              // Action Button
               SizedBox(
                 width: double.infinity,
-                height: 48,
+                height: 52,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFD4AF37),
-                      foregroundColor: Colors.white),
+                    backgroundColor: const Color(0xFF0F172A),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    elevation: 0,
+                  ),
                   onPressed: _isLoading ? null : _login,
                   child: _isLoading
-                      ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text('Login'),
+                      ? const SizedBox(
+                          height: 24,
+                          width: 24,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : const Text(
+                          'Login',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
                 ),
               ),
             ],
