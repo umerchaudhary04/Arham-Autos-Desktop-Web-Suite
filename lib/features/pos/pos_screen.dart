@@ -1,7 +1,9 @@
+import 'dart:convert';
 import 'package:flutter/material.dart' hide Route;
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:drift/drift.dart' as drift;
+import 'package:intl/intl.dart';
 import '../../core/db/app_database.dart';
 import 'invoice_printer.dart';
 import '../inventory/parts_master_screen.dart'; // for dbProvider
@@ -26,13 +28,25 @@ class _PosScreenState extends ConsumerState<PosScreen> {
   double _discount = 0;
   double _paidAmount = 0;
   bool _isWholesale = false;
+  String _selectedPrintFormat = 'A5_2UP';
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadPrintFormat();
       _barcodeFocusNode.requestFocus();
     });
+  }
+
+  Future<void> _loadPrintFormat() async {
+    final db = ref.read(dbProvider);
+    final fmt = await db.getConfig('DEFAULT_PRINT_FORMAT') ?? await db.getConfig('PRINT_MODE');
+    if (fmt != null && mounted) {
+      setState(() {
+        _selectedPrintFormat = (fmt == 'LASER_A5' ? 'A5_2UP' : fmt);
+      });
+    }
   }
 
   @override
@@ -48,16 +62,26 @@ class _PosScreenState extends ConsumerState<PosScreen> {
       if (event.logicalKey == LogicalKeyboardKey.f1) {
         _finalizeSale();
       } else if (event.logicalKey == LogicalKeyboardKey.f2) {
-        setState(() {
-          _items.clear();
-          _selectedCustomer = null;
-          _selectedRoute = null;
-          _selectedSalesman = null;
-          _isWholesale = false;
-        });
-        _barcodeFocusNode.requestFocus();
+        _clearSale();
+      } else if (event.logicalKey == LogicalKeyboardKey.f6) {
+        _holdCart();
+      } else if (event.logicalKey == LogicalKeyboardKey.f7) {
+        _showRecallModal();
       }
     }
+  }
+
+  void _clearSale() {
+    setState(() {
+      _items.clear();
+      _selectedCustomer = null;
+      _selectedRoute = null;
+      _selectedSalesman = null;
+      _discount = 0;
+      _paidAmount = 0;
+      _isWholesale = false;
+    });
+    _barcodeFocusNode.requestFocus();
   }
 
   void _scanBarcode(String code) async {
@@ -191,6 +215,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
         _selectedCustomer,
         route: _selectedRoute,
         salesman: _selectedSalesman,
+        printMode: _selectedPrintFormat,
       );
     });
 
@@ -248,6 +273,322 @@ class _PosScreenState extends ConsumerState<PosScreen> {
     );
   }
 
+  Future<void> _holdCart() async {
+    if (_items.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Cart is empty. Add items before holding.'))
+      );
+      _barcodeFocusNode.requestFocus();
+      return;
+    }
+
+    final defaultRef = _selectedCustomer != null 
+        ? '${_selectedCustomer!.name} (${_selectedCustomer!.shopName ?? "Customer"})' 
+        : 'Walk-in #${DateTime.now().millisecondsSinceEpoch % 10000}';
+    final noteController = TextEditingController(text: defaultRef);
+
+    final shouldHold = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.pause_circle_filled, color: Color(0xFFD97706)),
+            SizedBox(width: 8),
+            Text('Hold Current Cart (F6)'),
+          ],
+        ),
+        content: SizedBox(
+          width: 380,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Suspending ${_items.length} items with total of Rs ${(_items.fold<int>(0, (s, i) => s + (i.qty * i.unitRatePaisa)) / 100).toStringAsFixed(2)}.'),
+              const SizedBox(height: 12),
+              TextField(
+                controller: noteController,
+                autofocus: true,
+                decoration: const InputDecoration(
+                  labelText: 'Reference Note / Customer Tag',
+                  border: OutlineInputBorder(),
+                  hintText: 'e.g. Mechanic Aslam, CD70 Customer',
+                ),
+                onSubmitted: (_) => Navigator.pop(context, true),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFF0F172A), foregroundColor: Colors.white),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Hold & Clear Grid'),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldHold != true) {
+      _barcodeFocusNode.requestFocus();
+      return;
+    }
+
+    final db = ref.read(dbProvider);
+    final cartData = _items.map((i) => {
+      'partId': i.part.id,
+      'qty': i.qty,
+      'unitRatePaisa': i.unitRatePaisa,
+    }).toList();
+
+    await db.into(db.parkedCarts).insert(
+      ParkedCartsCompanion(
+        referenceNote: drift.Value(noteController.text.trim()),
+        customerId: _selectedCustomer != null ? drift.Value(_selectedCustomer!.id) : const drift.Value.absent(),
+        routeId: _selectedRoute != null ? drift.Value(_selectedRoute!.id) : const drift.Value.absent(),
+        salesmanId: _selectedSalesman != null ? drift.Value(_selectedSalesman!.id) : const drift.Value.absent(),
+        saleType: drift.Value(_isWholesale ? 'WHOLESALE' : 'RETAIL'),
+        cartJson: drift.Value(jsonEncode(cartData)),
+        discountPaisa: drift.Value((_discount * 100).toInt()),
+        parkedBy: const drift.Value(1),
+      ),
+    );
+
+    setState(() {
+      _items.clear();
+      _selectedCustomer = null;
+      _selectedRoute = null;
+      _selectedSalesman = null;
+      _discount = 0;
+      _paidAmount = 0;
+      _isWholesale = false;
+    });
+
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Cart parked as "${noteController.text.trim()}". Press F7 to recall.'),
+          backgroundColor: Colors.amber.shade900,
+        ),
+      );
+    }
+    _barcodeFocusNode.requestFocus();
+  }
+
+  Future<void> _showRecallModal() async {
+    final db = ref.read(dbProvider);
+    final parkedList = await (db.select(db.parkedCarts)..orderBy([(t) => drift.OrderingTerm.desc(t.createdAt)])).get();
+
+    if (!mounted) return;
+
+    if (parkedList.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No parked carts currently on hold.'))
+      );
+      _barcodeFocusNode.requestFocus();
+      return;
+    }
+
+    final customers = await db.select(db.customers).get();
+    final custMap = {for (var c in customers) c.id: c};
+    final routes = await db.select(db.routes).get();
+    final routeMap = {for (var r in routes) r.id: r};
+    final salesmen = await db.select(db.employees).get();
+    final salesMap = {for (var s in salesmen) s.id: s};
+    final parts = await db.select(db.parts).get();
+    final partMap = {for (var p in parts) p.id: p};
+
+    if (!mounted) return;
+
+    await showDialog<void>(
+      context: context,
+      builder: (modalContext) {
+        return StatefulBuilder(
+          builder: (ctx, setModalState) {
+            return AlertDialog(
+              title: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.restore_page_outlined, color: Color(0xFF0F172A)),
+                      const SizedBox(width: 8),
+                      Text('Recall Parked Cart (F7) — ${parkedList.length} on hold'),
+                    ],
+                  ),
+                  IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(modalContext)),
+                ],
+              ),
+              content: SizedBox(
+                width: 650,
+                height: 400,
+                child: parkedList.isEmpty
+                    ? const Center(child: Text('No more parked carts.', style: TextStyle(color: Colors.grey)))
+                    : ListView.separated(
+                        itemCount: parkedList.length,
+                        separatorBuilder: (_, __) => const Divider(height: 1),
+                        itemBuilder: (context, idx) {
+                          final pc = parkedList[idx];
+                          final List<dynamic> decoded = jsonDecode(pc.cartJson);
+                          int totalPaisa = 0;
+                          int totalQty = 0;
+                          for (final item in decoded) {
+                            final m = item as Map<String, dynamic>;
+                            final qty = m['qty'] as int;
+                            final rate = m['unitRatePaisa'] as int;
+                            totalQty += qty;
+                            totalPaisa += (qty * rate);
+                          }
+                          totalPaisa -= pc.discountPaisa;
+                          final cust = pc.customerId != null ? custMap[pc.customerId] : null;
+                          final timeStr = DateFormat('hh:mm a • dd MMM').format(pc.createdAt);
+
+                          return ListTile(
+                            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            leading: CircleAvatar(
+                              backgroundColor: const Color(0xFFF1F5F9),
+                              child: Text('${idx + 1}', style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF0F172A))),
+                            ),
+                            title: Row(
+                              children: [
+                                Text(
+                                  pc.referenceNote ?? (cust?.name ?? 'Walk-in Customer'),
+                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                                ),
+                                const SizedBox(width: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: pc.saleType == 'WHOLESALE' ? Colors.blue.shade50 : Colors.grey.shade200,
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(pc.saleType, style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: pc.saleType == 'WHOLESALE' ? Colors.blue.shade800 : Colors.grey.shade800)),
+                                ),
+                              ],
+                            ),
+                            subtitle: Text(
+                              '$totalQty items • Parked at $timeStr ${cust != null ? "• ${cust.shopName ?? cust.name}" : ""}',
+                              style: const TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                            ),
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  'Rs ${(totalPaisa / 100).toStringAsFixed(2)}',
+                                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF0F172A)),
+                                ),
+                                const SizedBox(width: 14),
+                                ElevatedButton.icon(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFF0F172A),
+                                    foregroundColor: Colors.white,
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                  ),
+                                  icon: const Icon(Icons.restore, size: 16),
+                                  label: const Text('Restore'),
+                                  onPressed: () async {
+                                    if (_items.isNotEmpty) {
+                                      final confirm = await showDialog<bool>(
+                                        context: modalContext,
+                                        builder: (c) => AlertDialog(
+                                          title: const Text('Overwrite Active Cart?'),
+                                          content: const Text('Your current checkout grid has items. Restoring will replace the active cart.'),
+                                          actions: [
+                                            TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Cancel')),
+                                            ElevatedButton(onPressed: () => Navigator.pop(c, true), child: const Text('Overwrite')),
+                                          ],
+                                        ),
+                                      );
+                                      if (confirm != true) return;
+                                    }
+
+                                    final restored = <_PosItem>[];
+                                    for (final item in decoded) {
+                                      final m = item as Map<String, dynamic>;
+                                      final p = partMap[m['partId'] as int];
+                                      if (p != null) {
+                                        restored.add(_PosItem(
+                                          part: p,
+                                          qty: m['qty'] as int,
+                                          unitRatePaisa: m['unitRatePaisa'] as int,
+                                        ));
+                                      }
+                                    }
+
+                                    await (db.delete(db.parkedCarts)..where((t) => t.id.equals(pc.id))).go();
+
+                                    setState(() {
+                                      _items.clear();
+                                      _items.addAll(restored);
+                                      _selectedCustomer = cust;
+                                      _selectedRoute = pc.routeId != null ? routeMap[pc.routeId] : null;
+                                      _selectedSalesman = pc.salesmanId != null ? salesMap[pc.salesmanId] : null;
+                                      _discount = pc.discountPaisa / 100.0;
+                                      _isWholesale = pc.saleType == 'WHOLESALE';
+                                      _updatePricing();
+                                    });
+
+                                    if (modalContext.mounted) {
+                                      Navigator.pop(modalContext);
+                                    }
+                                    _barcodeFocusNode.requestFocus();
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text('Cart "${pc.referenceNote ?? "Restored"}" loaded successfully!'),
+                                          backgroundColor: Colors.green.shade800,
+                                        ),
+                                      );
+                                    }
+                                  },
+                                ),
+                                const SizedBox(width: 8),
+                                OutlinedButton.icon(
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: Colors.red.shade700,
+                                    side: BorderSide(color: Colors.red.shade300),
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                  ),
+                                  icon: const Icon(Icons.delete_outline, size: 16),
+                                  label: const Text('Discard'),
+                                  onPressed: () async {
+                                    final confirm = await showDialog<bool>(
+                                      context: modalContext,
+                                      builder: (c) => AlertDialog(
+                                        title: const Text('Discard Parked Cart?'),
+                                        content: Text('Are you sure you want to discard "${pc.referenceNote ?? "this parked cart"}"? This cannot be undone.'),
+                                        actions: [
+                                          TextButton(onPressed: () => Navigator.pop(c, false), child: const Text('Cancel')),
+                                          ElevatedButton(
+                                            style: ElevatedButton.styleFrom(backgroundColor: Colors.red, foregroundColor: Colors.white),
+                                            onPressed: () => Navigator.pop(c, true),
+                                            child: const Text('Discard'),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                    if (confirm == true) {
+                                      await (db.delete(db.parkedCarts)..where((t) => t.id.equals(pc.id))).go();
+                                      setModalState(() {
+                                        parkedList.removeAt(idx);
+                                      });
+                                    }
+                                  },
+                                ),
+                              ],
+                            ),
+                          );
+                        },
+                      ),
+              ),
+            );
+          },
+        );
+      },
+    );
+    _barcodeFocusNode.requestFocus();
+  }
+
   @override
   Widget build(BuildContext context) {
     final db = ref.watch(dbProvider);
@@ -256,7 +597,49 @@ class _PosScreenState extends ConsumerState<PosScreen> {
       focusNode: _keyboardFocusNode,
       onKeyEvent: _onKey,
       child: Scaffold(
-        appBar: AppBar(title: const Text('POS Terminal [F1: Finalize | F2: Clear]')),
+        appBar: AppBar(
+          title: const Text('POS Terminal [F1: Finalize | F2: Clear | F6: Hold | F7: Recall]'),
+          actions: [
+            StreamBuilder<List<ParkedCart>>(
+              stream: db.select(db.parkedCarts).watch(),
+              builder: (context, snapshot) {
+                final parkedCount = snapshot.data?.length ?? 0;
+                return Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: const Color(0xFFD97706),
+                        side: const BorderSide(color: Color(0xFFF59E0B)),
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      ),
+                      icon: const Icon(Icons.pause_circle_outline, size: 18),
+                      label: const Text('Hold Bill (F6)', style: TextStyle(fontWeight: FontWeight.bold)),
+                      onPressed: _holdCart,
+                    ),
+                    const SizedBox(width: 8),
+                    Badge(
+                      isLabelVisible: parkedCount > 0,
+                      label: Text('$parkedCount', style: const TextStyle(fontWeight: FontWeight.bold)),
+                      backgroundColor: Colors.amber.shade800,
+                      child: ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: parkedCount > 0 ? const Color(0xFF0F172A) : const Color(0xFFF1F5F9),
+                          foregroundColor: parkedCount > 0 ? Colors.white : const Color(0xFF64748B),
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        ),
+                        icon: const Icon(Icons.restore_page_outlined, size: 18),
+                        label: Text(parkedCount > 0 ? 'Parked Carts ($parkedCount) [F7]' : 'Recall Bill (F7)', style: const TextStyle(fontWeight: FontWeight.bold)),
+                        onPressed: _showRecallModal,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                  ],
+                );
+              },
+            ),
+          ],
+        ),
         body: Row(
           children: [
             // Left Panel: Items & Scanners
@@ -332,7 +715,7 @@ class _PosScreenState extends ConsumerState<PosScreen> {
             // Right Panel: Customer & Totals
             Expanded(
               flex: 1,
-              child: Padding(
+              child: SingleChildScrollView(
                 padding: const EdgeInsets.all(12.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -401,7 +784,69 @@ class _PosScreenState extends ConsumerState<PosScreen> {
                       onChanged: (v) => setState(() => _paidAmount = double.tryParse(v) ?? 0),
                       onFieldSubmitted: (_) => _barcodeFocusNode.requestFocus(),
                     ),
-                    const Spacer(),
+                    const SizedBox(height: 12),
+                    // Quick Format Selector Chip / Profile
+                    Card(
+                      elevation: 0,
+                      color: const Color(0xFFF8FAFC),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(8),
+                        side: const BorderSide(color: Color(0xFFE2E8F0)),
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Row(
+                              children: [
+                                Icon(Icons.print_outlined, size: 14, color: Color(0xFF64748B)),
+                                SizedBox(width: 4),
+                                Text(
+                                  'Print Format',
+                                  style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xFF475569)),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 6),
+                            Wrap(
+                              spacing: 6,
+                              runSpacing: 4,
+                              children: [
+                                ChoiceChip(
+                                  visualDensity: VisualDensity.compact,
+                                  label: const Text('A5 2-Up Laser', style: TextStyle(fontSize: 11)),
+                                  selected: _selectedPrintFormat == 'A5_2UP' || _selectedPrintFormat == 'LASER_A5',
+                                  onSelected: (sel) {
+                                    if (sel) setState(() => _selectedPrintFormat = 'A5_2UP');
+                                    _barcodeFocusNode.requestFocus();
+                                  },
+                                ),
+                                ChoiceChip(
+                                  visualDensity: VisualDensity.compact,
+                                  label: const Text('80mm Thermal', style: TextStyle(fontSize: 11)),
+                                  selected: _selectedPrintFormat == 'THERMAL_80MM',
+                                  onSelected: (sel) {
+                                    if (sel) setState(() => _selectedPrintFormat = 'THERMAL_80MM');
+                                    _barcodeFocusNode.requestFocus();
+                                  },
+                                ),
+                                ChoiceChip(
+                                  visualDensity: VisualDensity.compact,
+                                  label: const Text('58mm Thermal', style: TextStyle(fontSize: 11)),
+                                  selected: _selectedPrintFormat == 'THERMAL_58MM',
+                                  onSelected: (sel) {
+                                    if (sel) setState(() => _selectedPrintFormat = 'THERMAL_58MM');
+                                    _barcodeFocusNode.requestFocus();
+                                  },
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../app_shell.dart';
+import 'package:drift/drift.dart' as drift;
 import '../../core/db/app_database.dart';
 import '../../core/crypto/kdf.dart';
 import '../inventory/parts_master_screen.dart'; // For dbProvider
@@ -43,16 +44,23 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       final userQuery = await (db.select(db.users)
             ..where((t) => t.username.equals(username)))
           .getSingleOrNull();
-      if (userQuery != null && userQuery.passwordHash != null) {
-        bool isValid =
-            await Kdf.verifyPassword(password, userQuery.passwordHash!);
-        if (isValid) {
-          role = userQuery.role == 'MANAGER' ? 'Manager' : 'Operator';
+      if (userQuery != null) {
+        bool isValid = false;
+        if (userQuery.passwordHash != null) {
+          isValid = await Kdf.verifyPassword(password, userQuery.passwordHash!);
         }
-      } else if (userQuery != null && userQuery.passwordHash == null) {
-        // If for some reason passwordHash is null, assume legacy pin-based or dev env
-        if (password == 'admin' && userQuery.role == 'MANAGER') {
-          role = 'Manager';
+        if (!isValid && userQuery.pinHash.isNotEmpty) {
+          isValid = await Kdf.verifyPassword(password, userQuery.pinHash);
+        }
+        if (isValid && userQuery.isActive) {
+          role = userQuery.role == 'MANAGER' ? 'Manager' : 'Operator';
+          // Record successful login
+          await (db.update(db.users)..where((t) => t.id.equals(userQuery.id))).write(
+            UsersCompanion(
+              lastLoginAt: drift.Value(DateTime.now()),
+              failedAttempts: const drift.Value(0),
+            ),
+          );
         }
       }
     }
@@ -63,7 +71,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       });
       if (role != null) {
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (_) => AppShell(userRole: role!)),
+          MaterialPageRoute(
+            builder: (_) => AppShell(userRole: role!, currentUsername: username),
+          ),
         );
       } else {
         setState(() {

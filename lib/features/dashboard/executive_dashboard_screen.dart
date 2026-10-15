@@ -9,7 +9,7 @@ final dashboardStatsProvider = FutureProvider.autoDispose<Map<String, dynamic>>(
   
   // 1. Total Inventory Value
   final parts = await db.select(db.parts).get();
-  double totalValue = parts.fold(0.0, (sum, p) => sum + ((p.avgCostPaisa ?? 0) * (p.currentStock ?? 0)) / 100);
+  double totalValue = parts.fold(0.0, (sum, p) => sum + (p.avgCostPaisa * p.currentStock) / 100);
   
   // 2. Daily Gross Sales
   final now = DateTime.now();
@@ -214,7 +214,7 @@ class ExecutiveDashboardScreen extends ConsumerWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(part.nameEn, style: TextStyle(fontFamily: 'Inter', fontWeight: FontWeight.bold, color: primaryColor), overflow: TextOverflow.ellipsis),
-                Text('Code: ${part.code} • Stock: ${part.currentStock ?? 0}', style: const TextStyle(fontFamily: 'Inter', fontSize: 12, color: Colors.red)),
+                Text('Code: ${part.code} • Stock: ${part.currentStock}', style: const TextStyle(fontFamily: 'Inter', fontSize: 12, color: Colors.red)),
               ],
             ),
           ),

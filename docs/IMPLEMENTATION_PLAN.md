@@ -1,195 +1,69 @@
-# Implementation Plan & Engineering Roadmap
+# Sprint Implementation Plan & Codebase Audit Status
 
 **Project:** Arham Autos POS & Management System  
-**Version:** 1.0.0  
+**Version:** 2.2.0 (Fully Synchronized with Complete Codebase Implementation & Monday.com Sprint Board)  
+**Project Owner:** Umer Asghar  
 **Technology Partner:** AlphaSync Systems (Private) Limited  
-**Target Completion:** 6 Weeks
 
 ---
 
-## 1\. Project Phasing & Milestone Breakdown
+## 1. Sprint Overview & Verified Audit Summary
 
-\+-------------------------------------------------------------------------------------------------+
-
-| W1: Phase 1 \- Foundation, Security & Database Setup                                             |
-
-| • Scaffold Flutter project (Windows Desktop \+ Web)                                              |
-
-| • Implement Drift ORM \+ SQLCipher 256-bit AES encryption layer                                  |
-
-| • Build First-Run Setup Wizard (Language, Backup Path, 16-digit Master Key, Manager PIN)       |
-
-| • Build Authentication Gate & RBAC Permission Guards (Manager vs Operator)                      |
-
-\+-------------------------------------------------------------------------------------------------+
-
-                                                |
-
-                                                v
-
-\+-------------------------------------------------------------------------------------------------+
-
-| W2: Phase 2 \- Inventory, Parts Catalog, Barcodes & Purchases (GRN)                              |
-
-| • Parts Catalog CRUD (dual retail/wholesale pricing, Urdu/English names, location tracking)     |
-
-| • Stock adjustments & Low-Stock alert engine (Threshold \<= 10 units)                            |
-
-| • Custom Barcode Studio (Code-128 generator & sticker print layouts)                            |
-
-| • Supplier master & Purchases/GRN receiving workflow (auto-inventory increment & moving cost)   |
-
-\+-------------------------------------------------------------------------------------------------+
-
-                                                |
-
-                                                v
-
-\+-------------------------------------------------------------------------------------------------+
-
-| W3: Phase 3 \- POS Billing Engine, Khata Ledgers & Invoice Printing                              |
-
-| • Fast keyboard-driven POS counter terminal with instant search and barcode input               |
-
-| • Automatic B2B wholesale vs B2C retail pricing resolution                                      |
-
-| • Customer Khata integration (credit balance tracking, limit verification, Manager PIN override)|
-
-| • Re-engineered 2-up Half-Page (A5/A4) invoice printing with AlphaSync Systems footer            |
-
-\+-------------------------------------------------------------------------------------------------+
-
-                                                |
-
-                                                v
-
-\+-------------------------------------------------------------------------------------------------+
-
-| W4: Phase 4 \- Returns Workflow, Expense Accounting, Routes & Analytics                          |
-
-| • Returns & Claims two-step approval flow (Operator draft / Manager approve or direct override) |
-
-| • Return triage (Sellable stock vs Defective / Supplier claim pool)                             |
-
-| • Operational expense journal & employee salary disbursement tracker                            |
-
-| • Delivery route setup & salesman/DSO territory assignment                                      |
-
-| • Reporting engine (Sales, COGS, Gross/Net Margins) with Excel (.xlsx) and CSV export           |
-
-\+-------------------------------------------------------------------------------------------------+
-
-                                                |
-
-                                                v
-
-\+-------------------------------------------------------------------------------------------------+
-
-| W5: Phase 5 \- Disaster Recovery, Localization, Antigravity UI/UX & Polish                       |
-
-| • Encrypted \`.bak\` backup engine (Backup Now button \+ designated local directory sync)          |
-
-| • Protected Factory Reset requiring Manager PIN \+ 16-digit Master Key verification              |
-
-| • Full bilingual localization (English LTR & Urdu Nastaliq RTL)                                 |
-
-| • Windows-native scrollbars and viewport responsive optimization                                |
-
-| • "About" section integration featuring AlphaSync Systems credentials                           |
-
-\+-------------------------------------------------------------------------------------------------+
-
-                                                |
-
-                                                v
-
-\+-------------------------------------------------------------------------------------------------+
-
-| W6: Phase 6 \- Quality Assurance, Security Audit & On-Premises Deployment                        |
-
-| • Stress testing offline database with 50,000+ SKU records                                      |
-
-| • Thermal and A4 laser printer verification across Windows 10 & 11                              |
-
-| • Release build compilation (.exe Windows installer) & client handoff documentation             |
-
-\+-------------------------------------------------------------------------------------------------+
+| Sprint | Sprint Focus | Done | Working On It | Not Started | Owner |
+| :--- | :--- | :---: | :---: | :---: | :--- |
+| **Sprint 1** | Core Architecture, Encrypted Database (Drift/SQLCipher) & Auth | 4 | 0 | 0 | Umer Asghar |
+| **Sprint 2** | Parts Catalog, Dual Pricing, Stock Adjustments, Barcode Studio & GRN | 4 | 0 | 0 | Umer Asghar |
+| **Sprint 3** | Executive Dashboard, POS Counter Billing, Khata Ledgers & Returns | 4 | 0 | 0 | Umer Asghar |
+| **Sprint 4** | Accounts/GL, Employees/HR, Area/Route Management & Core Reports | 4 | 0 | 0 | Umer Asghar |
+| **Sprint 5** | Bilingual Localization (Urdu RTL), Navigation, User CRUD & Backups | 4 | 0 | 0 | Umer Asghar |
+| **Sprint 6** | UI Refinements, Edge-Case Safeguards & Priority 0 POS/Khata Features | 7 | 0 | 0 | Umer Asghar |
+| **Sprint 7** | Priority 1 Enhancements (Dual-Print & Dead Stock) & Final Release QA | 3 | 0 | 0 | Umer Asghar |
+| **TOTAL** | **30 Mapped Engineering Tasks across 7 Sprints** | **30** | **0** | **0** | **Umer Asghar** |
 
 ---
 
-## 2\. Granular Task Matrix & Acceptance Criteria
+## 2. Granular Sprint Breakdown (Synchronized with Codebase Implementation)
 
-### Phase 1: Foundation, Security & Database Setup
+### Sprint 1: Core Architecture, Encrypted DB & Auth
+1. **[DONE]** **Flutter Project Scaffolding & Clean Architecture Setup** (`lib/main.dart`, `lib/app_shell.dart`, `pubspec.yaml`)
+2. **[DONE]** **Encrypted Local SQLite Database (Drift ORM + SQLCipher AES-256)** (`lib/core/db/app_database.dart`, `lib/core/db/connection/connection_native.dart`)
+3. **[DONE]** **First-Run Setup Wizard & 16-Digit Master Security Key Generation** (`lib/core/crypto/master_key.dart`, `lib/features/setup_wizard/setup_screen.dart`, `lib/main.dart`)
+4. **[DONE]** **PIN/Password Authentication Gate, Idle Lock & 2-Tier RBAC Guards** (`lib/features/auth/login_screen.dart`, `lib/core/security/idle_lock_service.dart`, `lib/app_shell.dart`)
 
-* **Tasks:**  
-  1. Configure Flutter project repository targeting Windows Desktop and Web platform.  
-  2. Implement Drift database schema with SQLCipher binding and PBKDF2 key derivation.  
-  3. Create `SetupWizardView`:  
-     * Step 1: Language selection (English / Urdu).  
-     * Step 2: Backup folder selection via Windows Folder Picker.  
-     * Step 3: Cryptographic generation of 16-digit Master Security Key with "Print Certificate" button.  
-     * Step 4: Manager username, password, and 4-digit PIN setup.  
-  4. Build PINpad login screen with session manager and RBAC route guard.  
-* **Acceptance Criteria:** App detects first run, forces wizard completion, stores encrypted credentials in local database, and locks when idle timer expires.
+### Sprint 2: Parts Catalog, Barcodes & Purchases (GRN)
+5. **[DONE]** **Parts Catalog CRUD with Dual B2C/B2B Pricing & Bilingual Titles** (`lib/features/inventory/parts_master_screen.dart`, `lib/features/inventory/part_form_dialog.dart`)
+6. **[DONE]** **Manual Stock Adjustments (with Audit Reasons) & Low-Stock Alert Engine (`<= 10`)** (`lib/features/inventory/stock_adjustment_dialog.dart`, `lib/features/dashboard/executive_dashboard_screen.dart`)
+7. **[DONE]** **Custom Barcode Studio (Code-128 Label Generator & Print Layout)** (`lib/features/barcode_studio/barcode_studio_screen.dart`, integrated with top bar button and per-row button in `lib/features/inventory/parts_master_screen.dart`)
+8. **[DONE]** **Supplier Master & Purchases / GRN Workflow with Moving Average Costing** (`lib/features/purchases/grn_screen.dart`, `lib/features/suppliers/supplier_dialog.dart`, `lib/core/db/tables/all_tables.dart`)
 
-### Phase 2: Inventory, Catalog, Barcodes & Purchases (GRN)
+### Sprint 3: POS Billing, Khata Ledgers & Returns Workflow
+9. **[DONE]** **Executive Dashboard (4 KPI Cards, Sales Trends, Recent 5 Sales & Low-Stock Table)** (`lib/features/dashboard/executive_dashboard_screen.dart`)
+10. **[DONE]** **POS Counter Billing Terminal with Auto-Focus Barcode & Dual-Price Switching** (`lib/features/pos/pos_screen.dart`)
+11. **[DONE]** **Customer & Supplier Khata Double-Entry Ledgers & Balance Carryover** (`lib/features/khata/khata_screen.dart`, `lib/features/khata/customer_dialog.dart`, `lib/features/khata/khata_statement_printer.dart`)
+12. **[DONE]** **Returns & Claims 2-Step Approval Workflow (Operator Draft & Manager Approve)** (`lib/features/returns/returns_screen.dart`)
 
-* **Tasks:**  
-  1. Parts master CRUD screen with dual pricing (`retail_price`, `wholesale_price`), bilingual title fields, and shelf location.  
-  2. Stock adjustments dialog with compulsory reason tagging.  
-  3. Barcode Studio widget generating Code-128 barcode stickers.  
-  4. Purchases / GRN receiving screen: Add vendor bill, line items, and auto-update stock upon posting.  
-* **Acceptance Criteria:** Adding a part reflects immediately; creating a GRN updates warehouse stock and updates unit cost; items with quantity \$\\le 10\$ appear in shortage lists.
+### Sprint 4: Accounts/GL, Employees/HR, Routes & Core Reports
+13. **[DONE]** **Operational Expense Journal & General Ledger Chart of Accounts (`GlScreen`)** (`lib/features/expenses/expenses_screen.dart`)
+14. **[DONE]** **Employee Directory & HR Payroll / Salary Tracker (`HrScreen`)** (`lib/features/employees/employees_screen.dart`, `test/employees_payroll_test.dart`)
+15. **[DONE]** **Area & Route Distribution Module with Salesman/DSO Territory Assignment** (`lib/features/routes/routes_screen.dart`, `lib/app_shell.dart`)
+16. **[DONE]** **Core Financial Reports Engine (Sales, COGS, Margins) with Excel & CSV Exports** (`lib/features/reports/reports_screen.dart`)
 
-### Phase 3: POS Billing Engine, Khata Ledgers & Invoicing
+### Sprint 5: Urdu RTL Localization, Backups & Security
+17. **[DONE]** **Full English & Urdu RTL Localization with Google Noto Nastaliq Font** (`lib/main.dart`, `lib/l10n/app_en.arb`, `lib/l10n/app_ur.arb`, `lib/l10n/app_localizations.dart`, `lib/app_shell.dart`)
+18. **[DONE]** **Persistent 11-Item Sidebar Navigation Order & Legacy Import Removal** (`lib/app_shell.dart`)
+19. **[DONE]** **Settings User Management CRUD & SQLite Persistence Hardening** (`lib/features/settings/settings_screen.dart`)
+20. **[DONE]** **Encrypted `.bak` Backups, Audit Logs Viewer, Master Key Wipe & About Modal** (`lib/features/settings/settings_screen.dart`, `lib/features/about/about_dialog_widget.dart`)
 
-* **Tasks:**  
-  1. POS sales counter interface with hotkeys (`F1`\-`F9`).  
-  2. Dynamic price selection: Retail default, Wholesale upon selecting B2B client.  
-  3. Customer credit limit validation: If `New Balance > Limit`, prompt for Manager PIN authorization.  
-  4. Invoice printing engine producing 2-up half-page layout matching the reference sample with: `"For Account Solution Contact AlphaSync Systems: 03140486627"`.  
-  5. Immutability enforcement: Finalized invoices cannot be edited or deleted.  
-* **Acceptance Criteria:** Fast barcode scan and item addition; seamless credit bill generation; exact A5/half-A4 laser print preview.
+### Sprint 6: UI Polish, Edge Cases & Priority 0 Features
+21. **[DONE]** **Login Screen UI Refactor (Floating Card Design per Reference Image)** (`lib/features/auth/login_screen.dart`)
+22. **[DONE]** **Customer Credit Limit Verification & Manager PIN Step-Up Modal (Edge Case)** (`lib/features/pos/pos_screen.dart`)
+23. **[DONE]** **Returns Inventory Disposition Triage: `Sellable` vs. `Defective Claim Pool` (Edge Case)** (`lib/features/returns/returns_screen.dart`)
+24. **[DONE]** **Master Security Key Printable Recovery Certificate in Setup Wizard (Edge Case)** (`lib/features/setup_wizard/setup_screen.dart`)
+25. **[DONE]** **Invoice Immutability Enforcement (Read-Only Post-Print Lock)** (`lib/features/pos/pos_screen.dart`)
+26. **[DONE]** **[Priority 0] Parked / Suspended Carts (`F6` Hold / `F7` Recall + Top Bar Badge)** (`lib/features/pos/pos_screen.dart`, `lib/core/db/tables/all_tables.dart`)
+27. **[DONE]** **[Priority 0] Aging Accounts Receivable Summary (`0–30`, `31–60`, `60+ Days Overdue` Tabs)** (`lib/features/khata/khata_screen.dart`, `lib/features/khata/khata_statement_printer.dart`)
 
-### Phase 4: Returns, Expenses, Routes & Analytics
-
-* **Tasks:**  
-  1. Returns module: Search by `Invoice ID`.  
-  2. Operator can submit claim; Manager can approve or directly process return.  
-  3. Triage selection on return approval: Restock into sellable stock or route to defective/supplier claim pool.  
-  4. Daily expense journal with category tagging (Rent, Fuel, Tea, Electricity).  
-  5. Employee directory with route assignment for salesmen.  
-  6. Reports module computing COGS, Gross Profit, and Net Profit, with one-click Excel (.xlsx) and CSV export.  
-* **Acceptance Criteria:** Operator claims do not affect stock until Manager approves; Excel export produces properly formatted tables with column headers.
-
-### Phase 5: Backup, Disaster Recovery, Localization & UI Polish
-
-* **Tasks:**  
-  1. Encrypted backup generation (`.bak` files) saved to the designated local drive.  
-  2. Factory reset verification requiring active Manager PIN \+ 16-digit Master Key.  
-  3. Audit log persistence verification across factory reset.  
-  4. Urdu Nastaliq/Naskh typography integration with complete RTL UI mirroring.  
-  5. Antigravity UI styling: Windows-native scrollbars on tables and list views.  
-  6. "About" section modal populated with AlphaSync Systems (Private) Limited information.  
-* **Acceptance Criteria:** Backup restores reliably on test machine; Urdu mode flips entire UI cleanly without overflow errors; About dialog displays all contact channels.
-
-### Phase 6: Testing, Hardening & Deployment
-
-* **Tasks:**  
-  1. Load test with 50,000 spare parts and 100,000 ledger entries.  
-  2. Offline power-interruption test during checkout to confirm SQLite WAL integrity.  
-  3. Build production Windows x64 `.exe` installer.  
-  4. Prepare Client User Manual and Quick Reference Cheat Sheet.  
-* **Acceptance Criteria:** Zero data corruption on simulated crash; sub-50ms query response on large datasets; single-click installer.
-
----
-
-## 3\. Risk Assessment & Mitigation Strategies
-
-| Risk Description | Severity | Probability | Mitigation Strategy |
-| :---- | :---: | :---: | :---- |
-| **Loss of 16-Digit Master Key by Owner** | High | Low | Setup Wizard forces the owner to print a physical "Master Key Recovery Certificate" before allowing the system to proceed. |
-| **Accidental Incomplete Transactions during Power Cut** | Medium | Medium | SQLite Write-Ahead Logging (WAL) and strict ACID transactional blocks ensure zero database corruption upon sudden power loss. |
-| **Credit Default by B2B Customers** | High | Medium | Hard credit limits on customer profiles prevent operators from issuing goods on credit without on-screen Manager PIN override. |
-| **Urdu Font Rendering & RTL Clipping** | Low | Medium | Custom `ScrollbarThemeData` with horizontal scrolling support and Google Noto Nastaliq Urdu font integration. |
-
+### Sprint 7: Priority 1 Enhancements (Dual-Print & Dead Stock) & QA
+28. **[DONE]** **[Priority 1] Optional Dual-Print Engine (2-Up Half-Page A5 Laser + 58/80mm Thermal Slip)** (`lib/features/pos/invoice_printer.dart`, `lib/features/settings/settings_screen.dart`)
+29. **[DONE]** **[Priority 1] Dead Stock & Movement Velocity Analytics (90-Day Zero-Movement Report)** (`lib/features/reports/reports_screen.dart`)
+30. **[DONE]** **Final Desktop Scrollbar Polish (`ScrollbarThemeData` 8px), 50k SKU Stress Testing & Windows `.exe` Packaging** (`lib/main.dart`, `test/phase6_tests.dart`)

@@ -194,3 +194,17 @@ class SupplierLedgerEntries extends Table {
   TextColumn get notes => text().nullable()();
   DateTimeColumn get createdAt => dateTime().clientDefault(() => DateTime.now())();
 }
+
+class ParkedCarts extends Table {
+  IntColumn get id => integer().autoIncrement()();
+  TextColumn get referenceNote => text().nullable()();
+  IntColumn get customerId => integer().nullable().references(Customers, #id)();
+  IntColumn get routeId => integer().nullable().references(Routes, #id)();
+  IntColumn get salesmanId => integer().nullable().references(Employees, #id)();
+  TextColumn get saleType => text().withDefault(const Constant('RETAIL'))();
+  TextColumn get cartJson => text()(); // JSON serialized cart items
+  IntColumn get discountPaisa => integer().withDefault(const Constant(0))();
+  IntColumn get parkedBy => integer().references(Users, #id)();
+  DateTimeColumn get createdAt => dateTime().clientDefault(() => DateTime.now())();
+}
+

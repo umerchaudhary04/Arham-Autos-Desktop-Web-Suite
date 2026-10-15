@@ -1,18 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'dart:io';
+import 'package:crypto/crypto.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+
 import 'core/db/app_database.dart';
+import 'core/db/connection/connection.dart';
 import 'core/localization/locale_provider.dart';
 import 'features/auth/login_screen.dart';
-import 'package:drift/native.dart';
-import 'dart:io';
-import 'dart:convert';
-import 'package:crypto/crypto.dart';
-import 'core/db/connection/connection.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
-import 'l10n/app_localizations.dart';
-import 'app_shell.dart';
+import 'features/setup_wizard/setup_screen.dart';
 import 'features/inventory/parts_master_screen.dart'; // Contains dbProvider
+import 'l10n/app_localizations.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -27,19 +26,29 @@ void main() async {
 
   final dbFile = File('arham_autos.db');
   final db = AppDatabase(openConnection(masterKey, dbFile));
+
+  // First-run detection: check if IS_SETUP_COMPLETED is true
+  final setupCompletedVal = await db.getConfig('IS_SETUP_COMPLETED');
+  final isSetupCompleted = setupCompletedVal == 'true';
+
+  // Load saved default locale if available
+  final savedLocaleVal = await db.getConfig('DEFAULT_LOCALE');
+  final initialLocale = savedLocaleVal == 'ur' ? const Locale('ur') : const Locale('en');
   
   runApp(
     ProviderScope(
       overrides: [
         dbProvider.overrideWithValue(db),
+        localeProvider.overrideWith((ref) => initialLocale),
       ],
-      child: const MyApp(),
+      child: MyApp(isSetupCompleted: isSetupCompleted),
     ),
   );
 }
 
 class MyApp extends ConsumerWidget {
-  const MyApp({super.key});
+  final bool isSetupCompleted;
+  const MyApp({super.key, this.isSetupCompleted = false});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -69,13 +78,11 @@ class MyApp extends ConsumerWidget {
         scaffoldBackgroundColor: Colors.white,
         canvasColor: Colors.white,
         cardColor: Colors.white,
-        dialogBackgroundColor: Colors.white,
         colorScheme: ColorScheme.fromSeed(
           seedColor: const Color(0xFF171717),
           primary: const Color(0xFF171717),
           secondary: const Color(0xFF404040),
           surface: Colors.white,
-          background: Colors.white,
         ),
         fontFamily: 'Inter',
         fontFamilyFallback: const ['Noto Nastaliq Urdu'],
@@ -105,7 +112,7 @@ class MyApp extends ConsumerWidget {
           interactive: true,
         ),
       ),
-      home: const LoginScreen(),
+      home: isSetupCompleted ? const LoginScreen() : const SetupWizardScreen(),
     );
   }
 }

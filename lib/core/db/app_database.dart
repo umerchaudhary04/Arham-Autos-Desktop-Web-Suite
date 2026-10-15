@@ -25,6 +25,8 @@ part 'app_database.g.dart';
   Suppliers,
   PurchasesGrn,
   PurchaseItemsGrn,
+  SupplierLedgerEntries,
+  ParkedCarts,
 ])
 class AppDatabase extends _$AppDatabase {
   AppDatabase(super.e);
@@ -33,6 +35,30 @@ class AppDatabase extends _$AppDatabase {
 
   Future<void> backupDatabase(String destinationPath) async {
     await customStatement('VACUUM INTO ?', [destinationPath]);
+  }
+
+  Future<String?> getConfig(String key) async {
+    final record = await (select(systemConfigs)..where((t) => t.configKey.equals(key))).getSingleOrNull();
+    return record?.configValue;
+  }
+
+  Future<void> setConfig(String key, String value) async {
+    final existing = await (select(systemConfigs)..where((t) => t.configKey.equals(key))).getSingleOrNull();
+    if (existing != null) {
+      await (update(systemConfigs)..where((t) => t.configKey.equals(key))).write(
+        SystemConfigsCompanion(
+          configValue: Value(value),
+          updatedAt: Value(DateTime.now()),
+        ),
+      );
+    } else {
+      await into(systemConfigs).insert(
+        SystemConfigsCompanion.insert(
+          configKey: key,
+          configValue: value,
+        ),
+      );
+    }
   }
 
   Future<void> factoryReset() async {
