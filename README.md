@@ -161,8 +161,7 @@ Arham Autos POS & Management Suite is designed, engineered, and supported by **A
 - **Helpline / WhatsApp:** `03140486627`
 - **Official Website:** [https://alphasync.codes](https://alphasync.codes)
 - **Technical Support:** `info@alphasync.codes`
-- **Headquarters:** Rahim Yar Khan / Khan Pur, Punjab, Pakistan
+- **Headquarters:** Rahim Yar Khan / Kot Samba, Punjab, Pakistan
 
 ---
 *Copyright © 2026 AlphaSync Systems (Private) Limited. All rights reserved.*
- API reference.

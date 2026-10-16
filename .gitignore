@@ -43,3 +43,7 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+/Output
+/build/windows/x64
+/build/flutter_assemble
+
