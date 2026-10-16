@@ -10,6 +10,7 @@ Compression=lzma2
 SolidCompression=yes
 ArchitecturesInstallIn64BitMode=x64
 SetupIconFile=windows\runner\resources\app_icon.ico
+UninstallDisplayIcon={app}\arham_autos.exe
 
 [Files]
 Source: "build\windows\x64\runner\Release\arham_autos.exe"; DestDir: "{app}"; Flags: ignoreversion
