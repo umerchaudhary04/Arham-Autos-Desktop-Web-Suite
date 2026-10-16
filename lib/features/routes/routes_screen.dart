@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:drift/drift.dart' as drift;
 
 import '../../core/db/app_database.dart';
+import '../../core/widgets/erp_page_header.dart';
 import '../inventory/parts_master_screen.dart'; // contains dbProvider
 import '../khata/customer_dialog.dart';
 
@@ -342,50 +343,21 @@ class _RoutesScreenState extends ConsumerState<RoutesScreen> {
 
                   return Column(
                     children: [
-                      // Header Bar
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                        decoration: const BoxDecoration(
-                          color: Colors.white,
-                          border: Border(bottom: BorderSide(color: Color(0xFFE2E8F0))),
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF0F172A),
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: const Icon(Icons.alt_route_rounded, color: Colors.white, size: 24),
-                            ),
-                            const SizedBox(width: 16),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: const [
-                                Text(
-                                  'Area & Route Distribution',
-                                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
-                                ),
-                                Text(
-                                  'Territory management, B2B shop allotments & salesman (DSO) assignments',
-                                  style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
-                                ),
-                              ],
-                            ),
-                            const Spacer(),
-                            ElevatedButton.icon(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF0F172A),
-                                foregroundColor: Colors.white,
-                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                              ),
-                              icon: const Icon(Icons.add_location_alt_outlined, size: 18),
-                              label: const Text('Add New Route / Area', style: TextStyle(fontWeight: FontWeight.bold)),
-                              onPressed: () => _openRouteDialog(),
-                            ),
-                          ],
+                      // Unified ERP Header Bar
+                      ErpPageHeader(
+                        icon: Icons.alt_route_rounded,
+                        title: 'Area & Route Distribution',
+                        subtitle: 'Territory management, B2B shop allotments & salesman (DSO) assignments',
+                        trailing: ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF0F172A),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          ),
+                          icon: const Icon(Icons.add_location_alt_outlined, size: 18),
+                          label: const Text('Add Route', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                          onPressed: () => _openRouteDialog(),
                         ),
                       ),
 

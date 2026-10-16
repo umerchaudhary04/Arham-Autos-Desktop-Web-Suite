@@ -7,6 +7,7 @@ import 'package:csv/csv.dart';
 import 'package:file_selector/file_selector.dart';
 
 import '../../core/db/app_database.dart';
+import '../../core/widgets/erp_page_header.dart';
 import '../inventory/parts_master_screen.dart'; // contains dbProvider
 import 'customer_dialog.dart';
 import 'khata_statement_printer.dart';
@@ -247,65 +248,35 @@ class _KhataScreenState extends ConsumerState<KhataScreen> with SingleTickerProv
       backgroundColor: const Color(0xFFF8FAFC),
       body: Column(
         children: [
-          // Header Bar
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              border: Border(bottom: BorderSide(color: Color(0xFFE2E8F0))),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF0F172A),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(Icons.menu_book_rounded, color: Colors.white, size: 24),
+          // Unified ERP Header Bar
+          ErpPageHeader(
+            icon: Icons.menu_book_rounded,
+            title: 'Khata & Ledger Accounts',
+            subtitle: 'Double-entry customer receivables, supplier payables & FIFO aging',
+            trailing: Container(
+              height: 40,
+              decoration: BoxDecoration(
+                color: const Color(0xFFF1F5F9),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0xFFCBD5E1)),
+              ),
+              child: TabBar(
+                controller: _tabController,
+                isScrollable: true,
+                indicator: BoxDecoration(
+                  color: const Color(0xFF0F172A),
+                  borderRadius: BorderRadius.circular(6),
                 ),
-                const SizedBox(width: 16),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
-                    Text(
-                      'Khata & Ledger Accounts',
-                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
-                    ),
-                    Text(
-                      'Double-entry customer receivables, supplier payables & FIFO aging',
-                      style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
-                    ),
-                  ],
-                ),
-                const Spacer(),
-                // Tab Selector
-                Container(
-                  height: 42,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF1F5F9),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: const Color(0xFFCBD5E1)),
-                  ),
-                  child: TabBar(
-                    controller: _tabController,
-                    isScrollable: true,
-                    indicator: BoxDecoration(
-                      color: const Color(0xFF0F172A),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    labelColor: Colors.white,
-                    unselectedLabelColor: const Color(0xFF475569),
-                    labelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
-                    indicatorSize: TabBarIndicatorSize.tab,
-                    tabs: const [
-                      Tab(text: 'Customer Khata (Receivables)'),
-                      Tab(text: 'Supplier Khata (Payables)'),
-                      Tab(text: 'Aging Receivables (0-30 / 31-60 / 60+ Days)'),
-                    ],
-                  ),
-                ),
-              ],
+                labelColor: Colors.white,
+                unselectedLabelColor: const Color(0xFF475569),
+                labelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                indicatorSize: TabBarIndicatorSize.tab,
+                tabs: const [
+                  Tab(text: 'Customer Khata'),
+                  Tab(text: 'Supplier Khata'),
+                  Tab(text: 'Aging Receivables'),
+                ],
+              ),
             ),
           ),
 

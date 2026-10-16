@@ -4,6 +4,7 @@ import 'package:drift/drift.dart' as drift;
 import 'package:intl/intl.dart';
 
 import '../../core/db/app_database.dart';
+import '../../core/widgets/erp_page_header.dart';
 import '../inventory/parts_master_screen.dart'; // contains dbProvider
 
 class ExpensesScreen extends ConsumerStatefulWidget {
@@ -89,63 +90,34 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> with SingleTick
       backgroundColor: const Color(0xFFF8FAFC),
       body: Column(
         children: [
-          // Header Bar
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              border: Border(bottom: BorderSide(color: Color(0xFFE2E8F0))),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF0F172A),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(Icons.account_balance_wallet_rounded, color: Colors.white, size: 24),
+          // Unified ERP Header Bar
+          ErpPageHeader(
+            icon: Icons.account_balance_wallet_rounded,
+            title: 'Expense Journal & General Ledger',
+            subtitle: 'Operational disbursements, petty cash vouchers & double-entry chart of accounts',
+            trailing: Container(
+              height: 40,
+              decoration: BoxDecoration(
+                color: const Color(0xFFF1F5F9),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0xFFCBD5E1)),
+              ),
+              child: TabBar(
+                controller: _tabController,
+                isScrollable: true,
+                indicator: BoxDecoration(
+                  color: const Color(0xFF0F172A),
+                  borderRadius: BorderRadius.circular(6),
                 ),
-                const SizedBox(width: 16),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: const [
-                    Text(
-                      'Expense Journal & General Ledger (GL)',
-                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
-                    ),
-                    Text(
-                      'Operational disbursements, petty cash vouchers & double-entry chart of accounts',
-                      style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
-                    ),
-                  ],
-                ),
-                const Spacer(),
-                Container(
-                  height: 42,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF1F5F9),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: const Color(0xFFCBD5E1)),
-                  ),
-                  child: TabBar(
-                    controller: _tabController,
-                    isScrollable: true,
-                    indicator: BoxDecoration(
-                      color: const Color(0xFF0F172A),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    labelColor: Colors.white,
-                    unselectedLabelColor: const Color(0xFF475569),
-                    labelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
-                    indicatorSize: TabBarIndicatorSize.tab,
-                    tabs: const [
-                      Tab(text: 'Operational Expense Journal'),
-                      Tab(text: 'General Ledger & Chart of Accounts'),
-                    ],
-                  ),
-                ),
-              ],
+                labelColor: Colors.white,
+                unselectedLabelColor: const Color(0xFF475569),
+                labelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                indicatorSize: TabBarIndicatorSize.tab,
+                tabs: const [
+                  Tab(text: 'Operational Expense Journal'),
+                  Tab(text: 'General Ledger & Chart of Accounts'),
+                ],
+              ),
             ),
           ),
 
@@ -408,113 +380,139 @@ class _ExpensesScreenState extends ConsumerState<ExpensesScreen> with SingleTick
   // ==========================================
   // TAB 2: GENERAL LEDGER CHART OF ACCOUNTS
   // ==========================================
+  Future<Map<String, dynamic>> _computeGlData(AppDatabase db) async {
+    try {
+      final results = await Future.wait([
+        db.select(db.sales).get().catchError((_) => <Sale>[]),
+        db.select(db.customerLedgerEntries).get().catchError((_) => <CustomerLedgerEntry>[]),
+        db.select(db.expenses).get().catchError((_) => <Expense>[]),
+        db.select(db.supplierLedgerEntries).get().catchError((_) => <SupplierLedgerEntry>[]),
+        (db.select(db.returnClaims)..where((t) => t.claimStatus.equals('APPROVED'))).get().catchError((_) => <ReturnClaim>[]),
+        db.select(db.parts).get().catchError((_) => <Part>[]),
+        db.select(db.customers).get().catchError((_) => <Customer>[]),
+        db.select(db.suppliers).get().catchError((_) => <Supplier>[]),
+        db.select(db.saleItems).get().catchError((_) => <SaleItem>[]),
+      ]);
+
+      final sales = results[0] as List<Sale>;
+      final custEntries = results[1] as List<CustomerLedgerEntry>;
+      final allExpenses = results[2] as List<Expense>;
+      final suppEntries = results[3] as List<SupplierLedgerEntry>;
+      final approvedClaims = results[4] as List<ReturnClaim>;
+      final parts = results[5] as List<Part>;
+      final customers = results[6] as List<Customer>;
+      final suppliers = results[7] as List<Supplier>;
+      final saleItems = results[8] as List<SaleItem>;
+
+      final grossSalesPaisa = sales.fold<int>(0, (sum, s) => sum + s.grossAmountPaisa);
+      final netSalesPaisa = sales.fold<int>(0, (sum, s) => sum + s.netAmountPaisa);
+      final netCashSalesPaisa = sales.fold<int>(0, (sum, s) => sum + s.paidAmountPaisa);
+
+      final customerRecoveriesPaisa = custEntries
+          .where((e) => e.entryType == 'PAYMENT_CREDIT')
+          .fold<int>(0, (sum, e) => sum + e.creditAmountPaisa);
+
+      final cashExpensesPaisa = allExpenses
+          .where((e) => e.paymentMode == 'CASH')
+          .fold<int>(0, (sum, e) => sum + e.amountPaisa);
+
+      final payrollDisbursedPaisa = allExpenses
+          .where((e) => e.category == 'PAYROLL' || e.category == 'SALARY')
+          .fold<int>(0, (sum, e) => sum + e.amountPaisa);
+
+      final operatingExpensesPaisa = allExpenses
+          .where((e) => e.category != 'PAYROLL' && e.category != 'SALARY')
+          .fold<int>(0, (sum, e) => sum + e.amountPaisa);
+
+      final totalExpensesPaisa = allExpenses.fold<int>(0, (sum, e) => sum + e.amountPaisa);
+
+      final supplierPaymentsPaisa = suppEntries
+          .where((e) => e.entryType == 'PAYMENT_PAID')
+          .fold<int>(0, (sum, e) => sum + e.debitAmountPaisa);
+
+      final cashRefundsPaisa = approvedClaims.fold<int>(0, (sum, r) => sum + r.totalRefundAmountPaisa);
+
+      final cashInHandPaisa = netCashSalesPaisa + customerRecoveriesPaisa - cashExpensesPaisa - supplierPaymentsPaisa - cashRefundsPaisa;
+
+      final inventoryValuePaisa = parts.fold<int>(0, (sum, p) => sum + (p.currentStock * p.avgCostPaisa));
+
+      final receivablesPaisa = customers.fold<int>(0, (sum, c) => sum + (c.currentBalancePaisa > 0 ? c.currentBalancePaisa : 0));
+
+      final payablesPaisa = suppliers.fold<int>(0, (sum, s) => sum + (s.currentBalancePaisa > 0 ? s.currentBalancePaisa : 0));
+
+      final partMap = {for (var p in parts) p.id: p};
+      final cogsPaisa = saleItems.fold<int>(0, (sum, item) {
+        final p = partMap[item.partId];
+        return sum + (item.qty * (p?.avgCostPaisa ?? 0));
+      });
+
+      final netOperatingProfitPaisa = netSalesPaisa - cogsPaisa - operatingExpensesPaisa - payrollDisbursedPaisa;
+      final totalAssetsPaisa = cashInHandPaisa + receivablesPaisa + inventoryValuePaisa;
+
+      return {
+        'cashInHandPaisa': cashInHandPaisa,
+        'inventoryValuePaisa': inventoryValuePaisa,
+        'receivablesPaisa': receivablesPaisa,
+        'totalAssetsPaisa': totalAssetsPaisa,
+        'payablesPaisa': payablesPaisa,
+        'grossSalesPaisa': grossSalesPaisa,
+        'netSalesPaisa': netSalesPaisa,
+        'cogsPaisa': cogsPaisa,
+        'operatingExpensesPaisa': operatingExpensesPaisa,
+        'payrollDisbursedPaisa': payrollDisbursedPaisa,
+        'totalExpensesPaisa': totalExpensesPaisa,
+        'netOperatingProfitPaisa': netOperatingProfitPaisa,
+        'netCashSalesPaisa': netCashSalesPaisa,
+        'customerRecoveriesPaisa': customerRecoveriesPaisa,
+        'cashExpensesPaisa': cashExpensesPaisa,
+        'supplierPaymentsPaisa': supplierPaymentsPaisa,
+        'cashRefundsPaisa': cashRefundsPaisa,
+      };
+    } catch (_) {
+      return {
+        'cashInHandPaisa': 0,
+        'inventoryValuePaisa': 0,
+        'receivablesPaisa': 0,
+        'totalAssetsPaisa': 0,
+        'payablesPaisa': 0,
+        'grossSalesPaisa': 0,
+        'netSalesPaisa': 0,
+        'cogsPaisa': 0,
+        'operatingExpensesPaisa': 0,
+        'payrollDisbursedPaisa': 0,
+        'totalExpensesPaisa': 0,
+        'netOperatingProfitPaisa': 0,
+        'netCashSalesPaisa': 0,
+        'customerRecoveriesPaisa': 0,
+        'cashExpensesPaisa': 0,
+        'supplierPaymentsPaisa': 0,
+        'cashRefundsPaisa': 0,
+      };
+    }
+  }
+
   Widget _buildGeneralLedgerTab() {
     final db = ref.watch(dbProvider);
 
     return FutureBuilder<Map<String, dynamic>>(
-      future: () async {
-        // 1. Sales & Revenue
-        final sales = await db.select(db.sales).get();
-        final grossSalesPaisa = sales.fold<int>(0, (sum, s) => sum + s.grossAmountPaisa);
-        final netSalesPaisa = sales.fold<int>(0, (sum, s) => sum + s.netAmountPaisa);
-        final netCashSalesPaisa = sales.fold<int>(0, (sum, s) => sum + s.paidAmountPaisa);
-
-        // 2. Customer Recoveries (Khata settlements)
-        final custEntries = await db.select(db.customerLedgerEntries).get();
-        final customerRecoveriesPaisa = custEntries
-            .where((e) => e.entryType == 'PAYMENT_CREDIT')
-            .fold<int>(0, (sum, e) => sum + e.creditAmountPaisa);
-
-        // 3. Operating Expenses & Payroll
-        final allExpenses = await db.select(db.expenses).get();
-        final cashExpensesPaisa = allExpenses
-            .where((e) => e.paymentMode == 'CASH')
-            .fold<int>(0, (sum, e) => sum + e.amountPaisa);
-
-        final payrollDisbursedPaisa = allExpenses
-            .where((e) => e.category == 'PAYROLL' || e.category == 'SALARY')
-            .fold<int>(0, (sum, e) => sum + e.amountPaisa);
-
-        final operatingExpensesPaisa = allExpenses
-            .where((e) => e.category != 'PAYROLL' && e.category != 'SALARY')
-            .fold<int>(0, (sum, e) => sum + e.amountPaisa);
-
-        final totalExpensesPaisa = allExpenses.fold<int>(0, (sum, e) => sum + e.amountPaisa);
-
-        // 4. Supplier Payments
-        final suppEntries = await db.select(db.supplierLedgerEntries).get();
-        final supplierPaymentsPaisa = suppEntries
-            .where((e) => e.entryType == 'PAYMENT_PAID')
-            .fold<int>(0, (sum, e) => sum + e.debitAmountPaisa);
-
-        // 5. Cash Refunds (Approved Return Claims)
-        final approvedClaims = await (db.select(db.returnClaims)
-            ..where((t) => t.claimStatus.equals('APPROVED'))).get();
-        final cashRefundsPaisa = approvedClaims.fold<int>(0, (sum, r) => sum + r.totalRefundAmountPaisa);
-
-        // 6. Cash-in-Hand: (Net Cash Sales + Customer Recoveries - Cash Expenses - Supplier Payments - Cash Refunds)
-        final cashInHandPaisa = netCashSalesPaisa + customerRecoveriesPaisa - cashExpensesPaisa - supplierPaymentsPaisa - cashRefundsPaisa;
-
-        // 7. Inventory Valuation: Sum of Current Stock * Avg Cost
-        final parts = await db.select(db.parts).get();
-        final inventoryValuePaisa = parts.fold<int>(0, (sum, p) => sum + (p.currentStock * p.avgCostPaisa));
-
-        // 8. Accounts Receivable: Sum of Customer Balances
-        final customers = await db.select(db.customers).get();
-        final receivablesPaisa = customers.fold<int>(0, (sum, c) => sum + (c.currentBalancePaisa > 0 ? c.currentBalancePaisa : 0));
-
-        // 9. Accounts Payable: Sum of Supplier Balances
-        final suppliers = await db.select(db.suppliers).get();
-        final payablesPaisa = suppliers.fold<int>(0, (sum, s) => sum + (s.currentBalancePaisa > 0 ? s.currentBalancePaisa : 0));
-
-        // 10. Cost of Goods Sold (COGS)
-        final saleItems = await db.select(db.saleItems).get();
-        final partMap = {for (var p in parts) p.id: p};
-        final cogsPaisa = saleItems.fold<int>(0, (sum, item) {
-          final p = partMap[item.partId];
-          return sum + (item.qty * (p?.avgCostPaisa ?? 0));
-        });
-
-        // 11. Net Operating Profit: Net Sales Revenue - COGS - Operating Expenses - Payroll Disbursed
-        final netOperatingProfitPaisa = netSalesPaisa - cogsPaisa - operatingExpensesPaisa - payrollDisbursedPaisa;
-
-        final totalAssetsPaisa = cashInHandPaisa + receivablesPaisa + inventoryValuePaisa;
-
-        return {
-          'cashInHandPaisa': cashInHandPaisa,
-          'inventoryValuePaisa': inventoryValuePaisa,
-          'receivablesPaisa': receivablesPaisa,
-          'totalAssetsPaisa': totalAssetsPaisa,
-          'payablesPaisa': payablesPaisa,
-          'grossSalesPaisa': grossSalesPaisa,
-          'netSalesPaisa': netSalesPaisa,
-          'cogsPaisa': cogsPaisa,
-          'operatingExpensesPaisa': operatingExpensesPaisa,
-          'payrollDisbursedPaisa': payrollDisbursedPaisa,
-          'totalExpensesPaisa': totalExpensesPaisa,
-          'netOperatingProfitPaisa': netOperatingProfitPaisa,
-          'netCashSalesPaisa': netCashSalesPaisa,
-          'customerRecoveriesPaisa': customerRecoveriesPaisa,
-          'cashExpensesPaisa': cashExpensesPaisa,
-          'supplierPaymentsPaisa': supplierPaymentsPaisa,
-          'cashRefundsPaisa': cashRefundsPaisa,
-        };
-      }(),
+      future: _computeGlData(db),
       builder: (context, snapshot) {
-        if (!snapshot.hasData) return const Center(child: CircularProgressIndicator());
-        final gl = snapshot.data!;
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        final gl = snapshot.data ?? const <String, dynamic>{};
 
-        final totalAssets = (gl['totalAssetsPaisa'] as int) / 100.0;
-        final cashInHand = (gl['cashInHandPaisa'] as int) / 100.0;
-        final invVal = (gl['inventoryValuePaisa'] as int) / 100.0;
-        final recVal = (gl['receivablesPaisa'] as int) / 100.0;
-        final payVal = (gl['payablesPaisa'] as int) / 100.0;
-        final grossSales = (gl['grossSalesPaisa'] as int) / 100.0;
-        final netSales = (gl['netSalesPaisa'] as int) / 100.0;
-        final cogs = (gl['cogsPaisa'] as int) / 100.0;
-        final opExpenses = (gl['operatingExpensesPaisa'] as int) / 100.0;
-        final payroll = (gl['payrollDisbursedPaisa'] as int) / 100.0;
-        final netProfit = (gl['netOperatingProfitPaisa'] as int) / 100.0;
+        final totalAssets = ((gl['totalAssetsPaisa'] as int?) ?? 0) / 100.0;
+        final cashInHand = ((gl['cashInHandPaisa'] as int?) ?? 0) / 100.0;
+        final invVal = ((gl['inventoryValuePaisa'] as int?) ?? 0) / 100.0;
+        final recVal = ((gl['receivablesPaisa'] as int?) ?? 0) / 100.0;
+        final payVal = ((gl['payablesPaisa'] as int?) ?? 0) / 100.0;
+        final grossSales = ((gl['grossSalesPaisa'] as int?) ?? 0) / 100.0;
+        final netSales = ((gl['netSalesPaisa'] as int?) ?? 0) / 100.0;
+        final cogs = ((gl['cogsPaisa'] as int?) ?? 0) / 100.0;
+        final opExpenses = ((gl['operatingExpensesPaisa'] as int?) ?? 0) / 100.0;
+        final payroll = ((gl['payrollDisbursedPaisa'] as int?) ?? 0) / 100.0;
+        final netProfit = ((gl['netOperatingProfitPaisa'] as int?) ?? 0) / 100.0;
 
         // Trial Balance Items (Double-Entry Debit & Credit)
         final trialBalanceItems = [

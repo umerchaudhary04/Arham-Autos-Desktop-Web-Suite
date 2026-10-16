@@ -107,23 +107,31 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Top Icon Badge
+              // Top Brand Monogram Badge with Asset Fallback
               Container(
-                width: 48,
-                height: 48,
+                width: 58,
+                height: 58,
                 decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
+                  borderRadius: BorderRadius.circular(18),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withOpacity(0.05),
-                      blurRadius: 10,
-                      offset: const Offset(0, 4),
+                      color: Colors.black.withValues(alpha: 0.08),
+                      blurRadius: 16,
+                      offset: const Offset(0, 6),
                     ),
                   ],
-                  border: Border.all(color: const Color(0xFFF1F5F9)),
                 ),
-                child: const Icon(Icons.arrow_forward, color: Color(0xFF0F172A)),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(18),
+                  child: Image.asset(
+                    'assets/images/arham_logo.png',
+                    width: 58,
+                    height: 58,
+                    fit: BoxFit.contain,
+                    errorBuilder: (context, error, stackTrace) =>
+                        const ArhamMonogramBadge(size: 58),
+                  ),
+                ),
               ),
               const SizedBox(height: 24),
               // Typography & Header
@@ -244,6 +252,83 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Custom stylized "AA" automotive monogram badge used as default brand emblem.
+class ArhamMonogramBadge extends StatelessWidget {
+  final double size;
+  const ArhamMonogramBadge({super.key, this.size = 56});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(size * 0.30),
+        border: Border.all(color: const Color(0xFF334155), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF0F172A).withValues(alpha: 0.25),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          // Subtle automotive gear / wheel accent ring
+          Container(
+            width: size * 0.76,
+            height: size * 0.76,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: const Color(0xFF0EA5E9).withValues(alpha: 0.35),
+                width: 1.2,
+              ),
+            ),
+          ),
+          // Stylized bold "AA" Monogram
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Text(
+                'A',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: size * 0.42,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: -1.5,
+                  fontFamily: 'Inter',
+                ),
+              ),
+              Transform.translate(
+                offset: const Offset(-2, 2),
+                child: Text(
+                  'A',
+                  style: TextStyle(
+                    color: const Color(0xFF38BDF8), // vibrant automotive cyan/teal
+                    fontSize: size * 0.36,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: -1.0,
+                    fontFamily: 'Inter',
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }

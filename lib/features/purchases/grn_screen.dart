@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:drift/drift.dart' as drift;
 import '../../core/db/app_database.dart';
+import '../../core/widgets/erp_page_header.dart';
 import '../inventory/parts_master_screen.dart'; // To get dbProvider
 import '../suppliers/supplier_dialog.dart';
 
@@ -210,28 +211,36 @@ class _GrnScreenState extends ConsumerState<GrnScreen> {
     final totalAmount = _items.fold<int>(0, (sum, item) => sum + (item.qty * item.unitCostPaisa));
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Purchases / Goods Receipt Note (GRN)'),
-        actions: [
-          TextButton.icon(
-            style: TextButton.styleFrom(foregroundColor: const Color(0xFF0F172A)),
-            icon: const Icon(Icons.people_alt_outlined),
-            label: const Text('Supplier Directory'),
-            onPressed: () {
-              showDialog(
-                context: context,
-                builder: (_) => const SupplierManagementDialog(),
-              );
-            },
+      backgroundColor: const Color(0xFFF8FAFC),
+      body: Column(
+        children: [
+          ErpPageHeader(
+            icon: Icons.local_shipping_rounded,
+            title: 'Purchases & Goods Receipt',
+            subtitle: 'Inward inventory procurement, moving average costing & supplier payables',
+            trailing: OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(
+                foregroundColor: const Color(0xFF0F172A),
+                side: const BorderSide(color: Color(0xFFCBD5E1)),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+              icon: const Icon(Icons.people_alt_outlined, size: 18),
+              label: const Text('Supplier Directory'),
+              onPressed: () {
+                showDialog(
+                  context: context,
+                  builder: (_) => const SupplierManagementDialog(),
+                );
+              },
+            ),
           ),
-          const SizedBox(width: 8),
-        ],
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(20.0),
+              child: Form(
+                key: _formKey,
+                child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Header Card: Supplier selection & Invoice Number
@@ -527,6 +536,9 @@ class _GrnScreenState extends ConsumerState<GrnScreen> {
           ),
         ),
       ),
+    ),
+  ],
+),
     );
   }
 }

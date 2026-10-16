@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/db/app_database.dart';
+import '../../core/widgets/erp_page_header.dart';
 import 'part_form_dialog.dart';
 import 'stock_adjustment_dialog.dart';
 import '../barcode_studio/barcode_studio_screen.dart';
@@ -25,44 +26,57 @@ class _PartsMasterScreenState extends ConsumerState<PartsMasterScreen> {
     final db = ref.watch(dbProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Parts Catalog & Master Inventory'),
-        actions: [
-          OutlinedButton.icon(
-            style: OutlinedButton.styleFrom(
-              foregroundColor: const Color(0xFF0F172A),
-              side: const BorderSide(color: Color(0xFFCBD5E1)),
+      backgroundColor: const Color(0xFFF8FAFC),
+      body: Column(
+        children: [
+          ErpPageHeader(
+            icon: Icons.inventory_2_rounded,
+            title: 'Parts Catalog & Master Inventory',
+            subtitle: 'Manage spare parts SKUs, bilingual names, pricing tiers & stock alerts',
+            trailing: Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                OutlinedButton.icon(
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFF0F172A),
+                    side: const BorderSide(color: Color(0xFFCBD5E1)),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                  icon: const Icon(Icons.qr_code_scanner, size: 18),
+                  label: const Text('Barcode Studio'),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const BarcodeStudioScreen()),
+                    );
+                  },
+                ),
+                ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF0F172A),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                  icon: const Icon(Icons.add, size: 18),
+                  label: const Text('Add Part'),
+                  onPressed: () {
+                    showDialog(
+                      context: context,
+                      builder: (_) => const PartFormDialog(),
+                    );
+                  },
+                ),
+              ],
             ),
-            icon: const Icon(Icons.qr_code_scanner, size: 18),
-            label: const Text('Barcode Studio'),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => const BarcodeStudioScreen()),
-              );
-            },
           ),
-          const SizedBox(width: 8),
-          ElevatedButton.icon(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF0F172A),
-              foregroundColor: Colors.white,
-            ),
-            icon: const Icon(Icons.add, size: 18),
-            label: const Text('Add Part'),
-            onPressed: () {
-              showDialog(
-                context: context,
-                builder: (_) => const PartFormDialog(),
-              );
-            },
-          ),
-          const SizedBox(width: 16),
-        ],
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
           children: [
             // Search Input Field
             TextField(
@@ -175,6 +189,9 @@ class _PartsMasterScreenState extends ConsumerState<PartsMasterScreen> {
           ],
         ),
       ),
+    ),
+  ],
+),
     );
   }
 }

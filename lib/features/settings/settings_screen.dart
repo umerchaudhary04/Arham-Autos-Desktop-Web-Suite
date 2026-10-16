@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 
 import '../../core/db/app_database.dart';
 import '../../core/crypto/kdf.dart';
+import '../../core/widgets/erp_page_header.dart';
 import '../inventory/parts_master_screen.dart'; // Contains dbProvider
 
 class SettingsRecoveryScreen extends ConsumerStatefulWidget {
@@ -637,25 +638,47 @@ class _SettingsRecoveryScreenState extends ConsumerState<SettingsRecoveryScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
-      appBar: AppBar(
-        title: const Text('Settings, Users & Security'),
-        bottom: TabBar(
-          controller: _tabController,
-          labelColor: const Color(0xFF0F172A),
-          unselectedLabelColor: const Color(0xFF64748B),
-          indicatorColor: const Color(0xFF0F172A),
-          indicatorWeight: 3,
-          tabs: const [
-            Tab(icon: Icon(Icons.admin_panel_settings_outlined), text: 'Preferences & User Management'),
-            Tab(icon: Icon(Icons.history_edu_outlined), text: 'Immutable Audit Trail & System Logs'),
-          ],
-        ),
-      ),
-      body: TabBarView(
-        controller: _tabController,
+      body: Column(
         children: [
-          _buildPreferencesAndUsersTab(),
-          _buildAuditLogsTab(),
+          // Unified ERP Header Bar
+          ErpPageHeader(
+            icon: Icons.admin_panel_settings_rounded,
+            title: 'Settings, Users & Security',
+            subtitle: 'User accounts, security safeguards, print engine defaults & immutable audit trail',
+            trailing: Container(
+              height: 40,
+              decoration: BoxDecoration(
+                color: const Color(0xFFF1F5F9),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0xFFCBD5E1)),
+              ),
+              child: TabBar(
+                controller: _tabController,
+                isScrollable: true,
+                indicator: BoxDecoration(
+                  color: const Color(0xFF0F172A),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                labelColor: Colors.white,
+                unselectedLabelColor: const Color(0xFF475569),
+                labelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                indicatorSize: TabBarIndicatorSize.tab,
+                tabs: const [
+                  Tab(text: 'Preferences & User Management'),
+                  Tab(text: 'Audit Trail & System Logs'),
+                ],
+              ),
+            ),
+          ),
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                _buildPreferencesAndUsersTab(),
+                _buildAuditLogsTab(),
+              ],
+            ),
+          ),
         ],
       ),
     );

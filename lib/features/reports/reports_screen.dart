@@ -8,6 +8,7 @@ import 'package:csv/csv.dart';
 import 'package:excel/excel.dart' as ex;
 
 import '../../core/db/app_database.dart';
+import '../../core/widgets/erp_page_header.dart';
 import '../inventory/parts_master_screen.dart'; // contains dbProvider
 
 class ReportsScreen extends ConsumerStatefulWidget {
@@ -695,64 +696,35 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> with SingleTicker
       backgroundColor: const Color(0xFFF8FAFC),
       body: Column(
         children: [
-          // Header Bar
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-            decoration: const BoxDecoration(
-              color: Colors.white,
-              border: Border(bottom: BorderSide(color: Color(0xFFE2E8F0))),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF0F172A),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(Icons.analytics_rounded, color: Colors.white, size: 24),
+          // Unified ERP Header Bar
+          ErpPageHeader(
+            icon: Icons.analytics_rounded,
+            title: 'Reports & Business Intelligence',
+            subtitle: 'Financial P&L statements, Excel/CSV exports, 90-day dead stock & ABC velocity analytics',
+            trailing: Container(
+              height: 40,
+              decoration: BoxDecoration(
+                color: const Color(0xFFF1F5F9),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: const Color(0xFFCBD5E1)),
+              ),
+              child: TabBar(
+                controller: _tabController,
+                isScrollable: true,
+                indicator: BoxDecoration(
+                  color: const Color(0xFF0F172A),
+                  borderRadius: BorderRadius.circular(6),
                 ),
-                const SizedBox(width: 16),
-                const Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Reports & Business Intelligence',
-                      style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
-                    ),
-                    Text(
-                      'Financial P&L statements, Excel/CSV exports, 90-day dead stock & ABC velocity analytics',
-                      style: TextStyle(fontSize: 12, color: Color(0xFF64748B)),
-                    ),
-                  ],
-                ),
-                const Spacer(),
-                Container(
-                  height: 42,
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF1F5F9),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: const Color(0xFFCBD5E1)),
-                  ),
-                  child: TabBar(
-                    controller: _tabController,
-                    isScrollable: true,
-                    indicator: BoxDecoration(
-                      color: const Color(0xFF0F172A),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    labelColor: Colors.white,
-                    unselectedLabelColor: const Color(0xFF475569),
-                    labelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
-                    indicatorSize: TabBarIndicatorSize.tab,
-                    tabs: const [
-                      Tab(text: 'Financial & Margin Summary'),
-                      Tab(text: 'Dead Stock (Zero-Movement)'),
-                      Tab(text: 'Movement Velocity (ABC Analysis)'),
-                    ],
-                  ),
-                ),
-              ],
+                labelColor: Colors.white,
+                unselectedLabelColor: const Color(0xFF475569),
+                labelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+                indicatorSize: TabBarIndicatorSize.tab,
+                tabs: const [
+                  Tab(text: 'Financial Summary'),
+                  Tab(text: 'Dead Stock'),
+                  Tab(text: 'Movement Velocity'),
+                ],
+              ),
             ),
           ),
 
@@ -886,7 +858,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> with SingleTicker
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                 ),
                 icon: const Icon(Icons.table_view_outlined, size: 16),
-                label: const Text('Export Excel (.xlsx)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                label: const Text('Export to Excel', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                 onPressed: _financialRows.isEmpty ? null : _exportFinancialExcel,
               ),
             ],
@@ -1114,7 +1086,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> with SingleTicker
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                 ),
                 icon: const Icon(Icons.table_view_outlined, size: 16),
-                label: const Text('Export Excel (.xlsx)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                label: const Text('Export to Excel', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                 onPressed: filtered.isEmpty ? null : _exportDeadStockExcel,
               ),
             ],
@@ -1383,7 +1355,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> with SingleTicker
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                 ),
                 icon: const Icon(Icons.table_view_outlined, size: 16),
-                label: const Text('Export Excel (.xlsx)', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                label: const Text('Export to Excel', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
                 onPressed: filtered.isEmpty ? null : _exportVelocityExcel,
               ),
             ],

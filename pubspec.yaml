@@ -48,6 +48,7 @@ flutter:
   uses-material-design: true
   assets:
     - assets/fonts/
+    - assets/images/
 
 dependency_overrides:
   meta: ^1.18.3

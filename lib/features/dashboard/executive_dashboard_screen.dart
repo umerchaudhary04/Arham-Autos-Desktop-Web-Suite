@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/db/app_database.dart';
+import '../../core/widgets/erp_page_header.dart';
 import '../inventory/parts_master_screen.dart'; // contains dbProvider
 import 'package:drift/drift.dart' as drift;
 
@@ -47,28 +48,34 @@ class ExecutiveDashboardScreen extends ConsumerWidget {
     final statsAsync = ref.watch(dashboardStatsProvider);
 
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: statsAsync.when(
-        loading: () => const Center(child: CircularProgressIndicator(color: primaryColor)),
-        error: (err, stack) => Center(child: Text('Error: $err')),
-        data: (stats) {
-          final totalValue = stats['totalValue'] as double;
-          final dailySales = stats['dailySales'] as double;
-          final grossProfit = stats['grossProfit'] as double;
-          final lowStockCount = stats['lowStockCount'] as int;
-          final lowStockItems = stats['lowStockItems'] as List<Part>;
-          final recentSales = stats['recentSales'] as List<Sale>;
+      backgroundColor: const Color(0xFFF8FAFC),
+      body: Column(
+        children: [
+          const ErpPageHeader(
+            icon: Icons.dashboard_rounded,
+            title: 'Executive Dashboard',
+            subtitle: 'Key business indicators, live sales tracking & stock monitoring',
+          ),
+          Expanded(
+            child: statsAsync.when(
+              loading: () => const Center(child: CircularProgressIndicator(color: primaryColor)),
+              error: (err, stack) => Center(child: Text('Error: $err')),
+              data: (stats) {
+                final totalValue = stats['totalValue'] as double;
+                final dailySales = stats['dailySales'] as double;
+                final grossProfit = stats['grossProfit'] as double;
+                final lowStockCount = stats['lowStockCount'] as int;
+                final lowStockItems = stats['lowStockItems'] as List<Part>;
+                final recentSales = stats['recentSales'] as List<Sale>;
 
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('Executive Dashboard', style: TextStyle(fontFamily: 'Inter', fontSize: 28, fontWeight: FontWeight.bold, color: primaryColor)),
-                const SizedBox(height: 24),
-                Row(
-                  children: [
-                    _buildKpiCard('Total Inventory Value', 'Rs. ${totalValue.toStringAsFixed(2)}', Icons.inventory, Colors.blue),
+                return SingleChildScrollView(
+                  padding: const EdgeInsets.all(24.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          _buildKpiCard('Total Inventory Value', 'Rs. ${totalValue.toStringAsFixed(2)}', Icons.inventory, Colors.blue),
                     const SizedBox(width: 16),
                     _buildKpiCard('Daily Gross Profit', 'Rs. ${grossProfit.toStringAsFixed(2)}', Icons.trending_up, Colors.green),
                     const SizedBox(width: 16),
@@ -133,6 +140,9 @@ class ExecutiveDashboardScreen extends ConsumerWidget {
           );
         },
       ),
+    ),
+  ],
+),
     );
   }
 

@@ -4,6 +4,7 @@ import 'package:drift/drift.dart' as drift;
 import 'package:intl/intl.dart';
 
 import '../../core/db/app_database.dart';
+import '../../core/widgets/erp_page_header.dart';
 import '../inventory/parts_master_screen.dart'; // contains dbProvider
 
 class EmployeesScreen extends ConsumerStatefulWidget {
@@ -668,48 +669,18 @@ class _EmployeesScreenState extends ConsumerState<EmployeesScreen>
 
               return Column(
                 children: [
-                  // Header Bar
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 24, vertical: 16),
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
-                      border: Border(
-                          bottom: BorderSide(color: Color(0xFFE2E8F0))),
-                    ),
-                    child: Row(
+                  // Unified ERP Header Bar
+                  ErpPageHeader(
+                    icon: Icons.badge_rounded,
+                    title: 'Employee Directory & HR Payroll',
+                    subtitle: 'Staff management, role assignments, route mapping & salary disbursement journal',
+                    trailing: Wrap(
+                      spacing: 12,
+                      runSpacing: 8,
+                      crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
                         Container(
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF0F172A),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: const Icon(Icons.badge_rounded,
-                              color: Colors.white, size: 24),
-                        ),
-                        const SizedBox(width: 16),
-                        const Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Employee Directory & HR Payroll',
-                              style: TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF0F172A),
-                              ),
-                            ),
-                            Text(
-                              'Staff management, role assignments, route mapping & salary disbursement journal',
-                              style: TextStyle(
-                                  fontSize: 12, color: Color(0xFF64748B)),
-                            ),
-                          ],
-                        ),
-                        const Spacer(),
-                        Container(
-                          height: 42,
+                          height: 40,
                           decoration: BoxDecoration(
                             color: const Color(0xFFF1F5F9),
                             borderRadius: BorderRadius.circular(8),
@@ -730,7 +701,7 @@ class _EmployeesScreenState extends ConsumerState<EmployeesScreen>
                               Tab(
                                 iconMargin: EdgeInsets.zero,
                                 child: Padding(
-                                  padding: EdgeInsets.symmetric(horizontal: 16),
+                                  padding: EdgeInsets.symmetric(horizontal: 14),
                                   child: Row(
                                     children: [
                                       Icon(Icons.people_outline, size: 16),
@@ -743,7 +714,7 @@ class _EmployeesScreenState extends ConsumerState<EmployeesScreen>
                               Tab(
                                 iconMargin: EdgeInsets.zero,
                                 child: Padding(
-                                  padding: EdgeInsets.symmetric(horizontal: 16),
+                                  padding: EdgeInsets.symmetric(horizontal: 14),
                                   child: Row(
                                     children: [
                                       Icon(Icons.payments_outlined, size: 16),
@@ -756,18 +727,19 @@ class _EmployeesScreenState extends ConsumerState<EmployeesScreen>
                             ],
                           ),
                         ),
-                        const SizedBox(width: 16),
                         ElevatedButton.icon(
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF0F172A),
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 12),
+                                horizontal: 16, vertical: 11),
                             shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(8)),
                           ),
                           icon: const Icon(Icons.person_add_rounded, size: 18),
-                          label: const Text('Add Employee'),
+                          label: const Text('Add Employee',
+                              style: TextStyle(
+                                  fontWeight: FontWeight.bold, fontSize: 13)),
                           onPressed: () => _openAddEditEmployeeDialog(
                               routes: routes),
                         ),
